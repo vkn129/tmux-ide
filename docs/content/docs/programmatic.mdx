@@ -1,0 +1,167 @@
+---
+title: Programmatic CLI
+description: Using tmux-ide from Claude Code and scripts
+---
+
+## Overview
+
+tmux-ide provides a programmatic CLI designed for automation and Claude Code integration. Every command supports `--json` for structured output, and mutation commands let you build and modify configs without editing YAML directly.
+
+## JSON Output
+
+Add `--json` to any command for structured output:
+
+```bash
+tmux-ide status --json
+tmux-ide validate --json
+tmux-ide detect --json
+tmux-ide config --json
+tmux-ide ls --json
+tmux-ide doctor --json
+```
+
+## Config Mutations
+
+### Set a value by dot path
+
+```bash
+tmux-ide config set name "my-app"
+tmux-ide config set rows.0.size "70%"
+tmux-ide config set rows.1.panes.0.command "npm run dev"
+tmux-ide config set rows.0.panes.1.title "Claude 2 — review"
+```
+
+### Add a pane
+
+```bash
+tmux-ide config add-pane --row 1 --title "Tests" --command "pnpm test"
+tmux-ide config add-pane --row 0 --title "Claude 3" --command "claude"
+```
+
+### Remove a pane
+
+```bash
+tmux-ide config remove-pane --row 1 --pane 2
+```
+
+### Add a row
+
+```bash
+tmux-ide config add-row --size "30%"
+```
+
+## Claude Code Integration
+
+### Setup workflow
+
+The recommended flow for setting up tmux-ide in a new project:
+
+1. **Detect the project stack:**
+   ```bash
+   tmux-ide detect --json
+   ```
+
+2. **Present layout options with ASCII diagrams.** Before writing any config, show the user 2-3 layout options visually so they can pick or tweak:
+
+   **Option A — Dual Claude + Dev**
+   ```
+   ┌─────────────────┬─────────────────┐
+   │                 │                 │
+   │    Claude 1     │    Claude 2     │  70%
+   │                 │                 │
+   ├────────┬────────┴────────┬────────┤
+   │Dev Srv │  Tests  │ Shell │        │  30%
+   └────────┴─────────┴───────┘────────┘
+   ```
+
+   **Option B — Triple Claude**
+   ```
+   ┌───────────┬───────────┬───────────┐
+   │           │           │           │
+   │ Claude 1  │ Claude 2  │ Claude 3  │  70%
+   │           │           │           │
+   ├───────────┴─────┬─────┴───────────┤
+   │    Dev Server    │     Shell       │  30%
+   └─────────────────┴─────────────────┘
+   ```
+
+   Adapt pane names and commands to the detected stack (e.g., `pnpm dev`, `cargo watch`, `go run`).
+
+3. **Write the chosen config:**
+   ```bash
+   tmux-ide detect --write
+   ```
+
+4. **Validate and launch:**
+   ```bash
+   tmux-ide validate --json
+   tmux-ide              # first launch
+   tmux-ide restart      # or restart to apply config changes
+   ```
+
+### Custom config workflow
+
+Build a config from scratch without touching YAML:
+
+```bash
+# Start with detection to get a base
+tmux-ide detect --write
+
+# Or build manually
+tmux-ide config add-row --size "70%"
+tmux-ide config add-pane --row 0 --title "Claude 1" --command "claude"
+tmux-ide config add-pane --row 0 --title "Claude 2" --command "claude"
+tmux-ide config add-row
+tmux-ide config add-pane --row 1 --title "Dev" --command "pnpm dev"
+tmux-ide config add-pane --row 1 --title "Shell"
+tmux-ide config set name "my-project"
+tmux-ide validate --json
+```
+
+### Modification workflow
+
+Modify an existing config:
+
+```bash
+# 1. Read current state
+tmux-ide config --json
+
+# 2. Make changes
+tmux-ide config set rows.1.panes.0.command "bun dev"
+tmux-ide config add-pane --row 1 --title "Tests" --command "bun test"
+
+# 3. Validate
+tmux-ide validate --json
+```
+
+### Agent Teams workflow
+
+Set up coordinated Claude Code instances:
+
+```bash
+# 1. Start with an existing config
+tmux-ide config --json
+
+# 2. Enable agent teams
+tmux-ide config enable-team --name "my-team"
+
+# 3. Assign tasks to teammates
+tmux-ide config set rows.0.panes.1.task "Work on frontend components"
+tmux-ide config set rows.0.panes.2.task "Work on API routes"
+
+# 4. Validate and launch
+tmux-ide validate --json
+tmux-ide
+tmux-ide restart      # or restart to apply config changes
+```
+
+The team lead can also reconfigure from within its session — see [Agent Teams](/docs/agent-teams#team-lead-self-configuration).
+
+## Best Practices
+
+- **Always use `--json`** for programmatic access — human output may change between versions
+- **Always validate after mutations** — `tmux-ide validate --json` catches errors before launch
+- **Top row ~70%** for Claude panes — gives editors enough space
+- **2-3 Claude panes** in the top row for parallel work (feature, review, explore)
+- **Dev servers + shell** in the bottom row
+- **Use `detect --json` first** to understand the project stack before suggesting a config

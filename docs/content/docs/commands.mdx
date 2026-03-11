@@ -1,0 +1,190 @@
+---
+title: Commands
+description: CLI commands reference
+---
+
+## `tmux-ide`
+
+Launch the IDE from the current directory. Reads `ide.yml` and creates a tmux session.
+
+```bash
+tmux-ide
+```
+
+You can also point it at a different directory:
+
+```bash
+tmux-ide ~/Developer/other-project
+```
+
+If a session with the same name already exists, it will reattach to it instead of recreating it. To force a fresh session, run `tmux-ide stop` first.
+
+## `tmux-ide init`
+
+Scaffold a new `ide.yml` in the current directory. Auto-detects your project stack and picks the right template.
+
+```bash
+cd ~/Developer/my-project
+tmux-ide init
+# → Detected next + convex. Created ide.yml for "my-project".
+```
+
+Force a specific template:
+
+```bash
+tmux-ide init --template nextjs
+```
+
+Available templates: `default`, `nextjs`, `convex`, `vite`, `python`, `go`
+
+Will refuse to overwrite an existing `ide.yml`.
+
+## `tmux-ide stop`
+
+Kill the tmux session for the current project.
+
+```bash
+tmux-ide stop
+```
+
+Reads the session name from `ide.yml`. If no config is found, uses the directory name as the session name.
+
+## `tmux-ide restart`
+
+Stop the current session and immediately relaunch it. Equivalent to running `tmux-ide stop` followed by `tmux-ide`.
+
+```bash
+tmux-ide restart
+```
+
+Useful when you've changed your `ide.yml` and want to apply the new layout.
+
+## `tmux-ide attach`
+
+Reattach to a running tmux-ide session.
+
+```bash
+tmux-ide attach
+```
+
+If the session isn't running, it will suggest starting it with `tmux-ide`.
+
+## `tmux-ide ls`
+
+List all running tmux sessions.
+
+```bash
+tmux-ide ls
+```
+
+Shows session name, creation time, and whether it's currently attached.
+
+## `tmux-ide doctor`
+
+Check that your system meets all requirements.
+
+```bash
+tmux-ide doctor
+```
+
+Checks:
+- tmux installed
+- tmux version ≥ 3.0
+- Node.js ≥ 18
+- 256-color terminal
+- `ide.yml` exists in current directory
+
+## `tmux-ide status`
+
+Show the status of the current IDE session.
+
+```bash
+tmux-ide status
+tmux-ide status --json
+```
+
+Returns session name, running state, config existence, and pane details.
+
+## `tmux-ide validate`
+
+Validate your `ide.yml` config file.
+
+```bash
+tmux-ide validate
+tmux-ide validate --json
+```
+
+Checks structure and types: config is an object, `rows` is a non-empty array, each row has panes, all pane fields have correct types (`title`/`command`/`dir` are strings, `focus` is boolean, `env` is an object with string/number values), `theme` fields are strings, and sizes require a `%` suffix with values between 1–100%.
+
+## `tmux-ide detect`
+
+Analyze the current project and suggest an `ide.yml` config.
+
+```bash
+tmux-ide detect            # show what was detected
+tmux-ide detect --json     # structured output
+tmux-ide detect --write    # write suggested config to ide.yml
+```
+
+Detects: package manager (npm/pnpm/yarn/bun), frameworks (Next.js, Vite, Convex, Remix, Nuxt, FastAPI, Django, Flask, Go, Rust), and dev commands.
+
+## `tmux-ide config`
+
+Read and modify your `ide.yml` programmatically.
+
+### Dump config
+
+```bash
+tmux-ide config            # print config
+tmux-ide config --json     # as JSON
+```
+
+### Set a value
+
+```bash
+tmux-ide config set name "my-app"
+tmux-ide config set rows.0.size "70%"
+tmux-ide config set rows.1.panes.0.command "npm run dev"
+```
+
+### Add a pane
+
+```bash
+tmux-ide config add-pane --row 1 --title "Tests" --command "pnpm test"
+```
+
+### Remove a pane
+
+```bash
+tmux-ide config remove-pane --row 1 --pane 2
+```
+
+### Add a row
+
+```bash
+tmux-ide config add-row --size "30%"
+```
+
+### Enable agent teams
+
+```bash
+tmux-ide config enable-team --name "my-team"
+```
+
+Finds all `command: claude` panes and assigns the first as `lead`, the rest as `teammate`. Adds a `team` block to the config. See [Agent Teams](/docs/agent-teams) for details.
+
+### Disable agent teams
+
+```bash
+tmux-ide config disable-team
+```
+
+Removes the `team` config and all `role`/`task` fields from panes.
+
+## Global Flags
+
+| Flag | Description |
+|------|-------------|
+| `--json` | Output as structured JSON (all commands) |
+| `--template <name>` | Use a specific template for `init` |
+| `--write` | Write detected config for `detect` |

@@ -1,0 +1,27 @@
+name: my-app
+
+team:
+  name: my-app
+
+before: pnpm install
+
+rows:
+  - size: 70%
+    panes:
+      - title: Lead
+        command: claude
+        role: lead
+        focus: true
+      - title: Frontend
+        command: claude
+        role: teammate
+        task: "Work on React components and pages"
+      - title: Backend
+        command: claude
+        role: teammate
+        task: "Work on API routes and server logic"
+
+  - panes:
+      - title: Next.js
+        command: pnpm dev
+      - title: Shell

@@ -1,0 +1,15 @@
+name: my-app
+
+rows:
+  - size: 70%
+    panes:
+      - title: Claude 1 — feature
+        command: claude
+      - title: Claude 2 — review
+        command: claude
+
+  - panes:
+      - title: Go
+        command: go run .
+      - title: Shell
+        focus: true

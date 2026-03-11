@@ -1,0 +1,31 @@
+name: my-monorepo
+
+team:
+  name: my-monorepo
+
+rows:
+  - size: 70%
+    panes:
+      - title: Lead — Architect
+        command: claude
+        role: lead
+        focus: true
+      - title: Frontend Agent
+        command: claude
+        role: teammate
+        task: "Work on the frontend application"
+        dir: apps/web
+      - title: Backend Agent
+        command: claude
+        role: teammate
+        task: "Work on the backend services"
+        dir: apps/api
+
+  - panes:
+      - title: Frontend
+        command: pnpm dev
+        dir: apps/web
+      - title: Backend
+        command: pnpm dev
+        dir: apps/api
+      - title: Shell

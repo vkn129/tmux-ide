@@ -1,0 +1,171 @@
+---
+title: Configuration
+description: The ide.yml config file reference
+---
+
+## Overview
+
+tmux-ide is configured with an `ide.yml` file in your project root. It defines the session name, layout rows, panes, and optional theming.
+
+## Full Example
+
+```yaml
+name: my-app
+
+before: pnpm install
+
+rows:
+  - size: 70%
+    panes:
+      - title: Claude 1 — feature
+        command: claude
+        size: 40%
+      - title: Claude 2 — review
+        command: claude
+      - title: Claude 3 — explore
+        command: claude
+
+  - panes:
+      - title: Next.js
+        command: pnpm dev
+        dir: apps/web
+        env:
+          PORT: 3000
+      - title: Convex
+        command: npx convex dev
+      - title: Shell
+        focus: true
+
+theme:
+  accent: colour75
+  border: colour238
+  bg: colour235
+  fg: colour248
+```
+
+## Fields
+
+### `name`
+
+The tmux session name. Used to identify the session for `tmux attach` and `tmux-ide stop`.
+
+```yaml
+name: my-app
+```
+
+### `before`
+
+Optional shell command to run before creating the tmux session. Useful for installing dependencies or running setup scripts.
+
+```yaml
+before: pnpm install
+```
+
+### `rows`
+
+An array of horizontal rows. Each row contains panes that are split side-by-side within it.
+
+```yaml
+rows:
+  - size: 70%    # this row gets 70% of screen height
+    panes: [...]
+  - panes: [...]  # remaining 30%
+```
+
+#### `rows[].size`
+
+Optional. The percentage of screen height this row should occupy. If omitted, remaining space is divided evenly among rows without a `size`.
+
+#### `rows[].panes`
+
+An array of panes within the row. Panes are split horizontally (side-by-side).
+
+### Pane Options
+
+```yaml
+panes:
+  - title: My Pane
+    command: pnpm dev
+    size: 60%
+    dir: apps/web
+    focus: true
+    env:
+      PORT: 3000
+      NODE_ENV: development
+```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `title` | No | Label displayed in the pane border |
+| `command` | No | Shell command to execute when the pane opens. If omitted, you get an interactive shell. |
+| `size` | No | Width percentage within its row. If omitted, panes share equal width. |
+| `dir` | No | Working directory for this pane, relative to the project root. |
+| `focus` | No | Set to `true` to give this pane initial focus when the session starts. |
+| `env` | No | Key-value pairs of environment variables to set before running the command. |
+
+### `team`
+
+Optional. Enables [Agent Teams](/docs/agent-teams) — coordinated Claude Code instances with a lead and teammates.
+
+```yaml
+team:
+  name: my-team
+```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `team.name` | Yes | Team name for coordination storage |
+| `team.model` | No | Model override for teammates |
+| `team.permissions` | No | Default tool permissions for teammates |
+
+When `team` is set, exactly one pane must have `role: lead`. See [Agent Teams](/docs/agent-teams) for full details.
+
+### Pane Team Fields
+
+When using agent teams, panes can have additional fields:
+
+| Field | Description |
+|-------|-------------|
+| `role` | `"lead"` or `"teammate"` — marks this pane as part of an agent team |
+| `task` | Initial task description for a teammate pane |
+
+```yaml
+panes:
+  - title: Lead
+    command: claude
+    role: lead
+  - title: Frontend
+    command: claude
+    role: teammate
+    task: "Work on React components"
+```
+
+### `theme`
+
+Optional color overrides for the tmux styling.
+
+```yaml
+theme:
+  accent: colour75     # Active pane border + status bar accent
+  border: colour238    # Inactive pane border
+  bg: colour235        # Status bar background
+  fg: colour248        # Status bar text
+```
+
+Colors use tmux color names: `colour0`–`colour255`, or standard names like `red`, `green`, `blue`.
+
+## Layout Logic
+
+The layout is built as a grid:
+
+1. **Rows** stack vertically — the first row is at the top
+2. **Panes** within a row split horizontally — evenly distributed by default
+3. The first row with `size: 70%` takes 70% of the terminal height
+4. Rows without a `size` share the remaining space equally
+5. Panes with `size` set control their width within the row
+6. The pane with `focus: true` gets initial focus (defaults to pane 0)
+
+```
+Row 1 (size: 70%):  [ Pane A | Pane B | Pane C ]
+Row 2 (remaining):  [ Pane D | Pane E ]
+```

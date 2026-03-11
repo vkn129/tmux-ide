@@ -1,0 +1,70 @@
+import { RootProvider } from 'fumadocs-ui/provider/next';
+import './global.css';
+import { GeistSans } from 'geist/font/sans';
+import { GeistMono } from 'geist/font/mono';
+import { GeistPixelSquare } from 'geist/font/pixel';
+import type { Metadata } from 'next';
+
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://tmux.thijsverreck.com';
+
+export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: 'tmux-ide — Run Claude agent teams in one terminal',
+    template: '%s | tmux-ide',
+  },
+  description:
+    'Orchestrate Claude Code agent teams in tmux. A team lead and multiple teammates, each in its own pane, coordinating through shared tasks. One YAML config, one command.',
+  keywords: [
+    'Claude Code',
+    'agent teams',
+    'tmux',
+    'terminal IDE',
+    'Claude',
+    'multi-agent',
+    'tmux-ide',
+    'CLI',
+    'developer tools',
+    'AI coding',
+    'terminal multiplexer',
+  ],
+  authors: [{ name: 'Thijs Verreck', url: 'https://thijsverreck.com' }],
+  creator: 'Thijs Verreck',
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    siteName: 'tmux-ide',
+    title: 'tmux-ide — Run Claude agent teams in one terminal',
+    description:
+      'Orchestrate Claude Code agent teams in tmux. A team lead and multiple teammates, each in its own pane, coordinating through shared tasks.',
+    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'tmux-ide — Claude agent teams in tmux' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'tmux-ide — Run Claude agent teams in one terminal',
+    description:
+      'Orchestrate Claude Code agent teams in tmux. A team lead and multiple teammates, each in its own pane, coordinating through shared tasks.',
+    images: ['/og-image.png'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+};
+
+export default function Layout({ children }: LayoutProps<'/'>) {
+  return (
+    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable} ${GeistPixelSquare.variable}`} suppressHydrationWarning>
+      <body className="flex flex-col min-h-screen">
+        <RootProvider>{children}</RootProvider>
+      </body>
+    </html>
+  );
+}

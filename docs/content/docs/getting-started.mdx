@@ -1,0 +1,86 @@
+---
+title: Getting Started
+description: Set up tmux-ide in your project in under a minute
+---
+
+## Prerequisites
+
+- [tmux](https://github.com/tmux/tmux) installed (`brew install tmux` on macOS)
+- Node.js 18+
+
+## Install
+
+```bash
+npm i -g tmux-ide
+```
+
+Or use it directly with `npx` — no install needed:
+
+```bash
+npx tmux-ide
+```
+
+## Create your first workspace
+
+Navigate to your project and scaffold a config:
+
+```bash
+cd ~/Developer/my-project
+tmux-ide init
+```
+
+This creates an `ide.yml` in your project root:
+
+```yaml
+name: my-project
+
+rows:
+  - size: 70%
+    panes:
+      - title: Claude 1
+        command: claude
+      - title: Claude 2
+        command: claude
+
+  - panes:
+      - title: Dev Server
+      - title: Shell
+```
+
+## Launch
+
+```bash
+tmux-ide
+```
+
+That's it. You'll get a tmux session with labeled panes, split exactly as configured.
+
+## Stop
+
+Detach with `Ctrl-b d` to leave it running in the background, or kill it:
+
+```bash
+tmux-ide stop
+```
+
+## Restart
+
+If you've changed your `ide.yml`, restart to apply the new layout:
+
+```bash
+tmux-ide restart
+```
+
+## Reconnect
+
+If you detach or close your terminal, just run `tmux-ide` again — it will reattach to the existing session:
+
+```bash
+tmux-ide
+```
+
+Or use tmux directly:
+
+```bash
+tmux attach -t my-project
+```

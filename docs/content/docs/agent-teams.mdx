@@ -1,0 +1,207 @@
+---
+title: Agent Teams
+description: Coordinate multiple Claude Code instances as a team
+---
+
+## Overview
+
+Agent Teams lets you run coordinated Claude Code instances in your tmux-ide layout. One pane acts as the **team lead**, coordinating work and assigning tasks. The others are **teammates** that work independently on their assigned tasks.
+
+tmux-ide handles the tmux layout and passes the right flags to each Claude instance — you just declare the roles in your `ide.yml`.
+
+<Callout type="warn">
+Agent teams are experimental in Claude Code and disabled by default. tmux-ide automatically sets `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` when your config includes a `team` block.
+</Callout>
+
+## Quick Start
+
+The fastest way to get started:
+
+```bash
+tmux-ide init --template agent-team
+tmux-ide
+```
+
+This creates a layout with a lead and two teammates in the top row, plus a dev server and shell in the bottom row.
+
+## Configuration
+
+Add a `team` block to your `ide.yml` and assign `role` to your Claude panes:
+
+```yaml
+name: my-app
+
+team:
+  name: my-app
+
+rows:
+  - size: 70%
+    panes:
+      - title: Lead
+        command: claude
+        role: lead
+        focus: true
+      - title: Frontend
+        command: claude
+        role: teammate
+        task: "Work on React components and pages"
+      - title: Backend
+        command: claude
+        role: teammate
+        task: "Work on API routes and server logic"
+
+  - panes:
+      - title: Next.js
+        command: pnpm dev
+      - title: Shell
+```
+
+### `team` fields
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `team.name` | Yes | Team name, used for coordination storage at `~/.claude/teams/{name}/` |
+| `team.model` | No | Model override for teammate instances |
+| `team.permissions` | No | Default tool permissions for teammates (array of strings) |
+
+### Pane role fields
+
+| Field | Description |
+|-------|-------------|
+| `role` | `"lead"` or `"teammate"`. Exactly one pane must be `lead` when `team` is set. |
+| `task` | Initial task description for a teammate. The lead uses this to assign work at startup. |
+
+## How It Works
+
+When you launch a team-enabled config, tmux-ide:
+
+1. Creates the tmux session and all panes as usual
+2. Sets `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` on the session
+3. Launches the **lead** pane with `claude --team "{name}"`
+4. Waits briefly for the lead to initialize
+5. Launches **teammate** panes with `claude --teammate-mode in-process --team "{name}"`
+
+Each teammate gets its own context window and communicates with the lead via shared task lists and messages.
+
+## Enable Teams on Existing Config
+
+Already have an `ide.yml`? Enable teams in one command:
+
+```bash
+tmux-ide config enable-team --name "my-team"
+```
+
+This finds all `command: claude` panes and assigns roles — the first becomes the lead, the rest become teammates. Then assign tasks:
+
+```bash
+tmux-ide config set rows.0.panes.1.task "Work on frontend components"
+tmux-ide config set rows.0.panes.2.task "Work on API routes"
+tmux-ide validate --json
+```
+
+## Disable Teams
+
+To go back to independent Claude instances:
+
+```bash
+tmux-ide config disable-team
+```
+
+This removes the `team` config and all `role`/`task` fields.
+
+## Team Lead Self-Configuration
+
+The team lead can reconfigure its own team from within the session. Since the lead is a full Claude Code instance running inside tmux-ide, it can use the CLI to reshape the layout:
+
+```bash
+# Add a new teammate
+tmux-ide config add-pane --row 0 --title "Reviewer" --command "claude"
+tmux-ide config set rows.0.panes.3.role teammate
+tmux-ide config set rows.0.panes.3.task "Review code and check for issues"
+
+# Apply changes
+tmux-ide validate --json
+tmux-ide restart
+```
+
+After restart, the new teammate pane appears and joins the team automatically.
+
+## Templates
+
+### Agent Team (default)
+
+Lead + 2 teammates with a generic dev setup.
+
+```bash
+tmux-ide init --template agent-team
+```
+
+```
+┌───────────┬───────────┬───────────┐
+│           │           │           │
+│   Lead    │Teammate 1 │Teammate 2 │  70%
+│           │           │           │
+├───────────┴─────┬─────┴───────────┤
+│   Dev Server    │     Shell       │  30%
+└─────────────────┴─────────────────┘
+```
+
+### Agent Team — Next.js
+
+Lead + frontend teammate + backend teammate with Next.js dev server.
+
+```bash
+tmux-ide init --template agent-team-nextjs
+```
+
+```
+┌───────────┬───────────┬───────────┐
+│           │           │           │
+│   Lead    │ Frontend  │  Backend  │  70%
+│           │           │           │
+├───────────┴─────┬─────┴───────────┤
+│     Next.js     │     Shell       │  30%
+└─────────────────┴─────────────────┘
+```
+
+### Agent Team — Monorepo
+
+Lead architect + per-app teammates with separate working directories.
+
+```bash
+tmux-ide init --template agent-team-monorepo
+```
+
+```
+┌───────────┬───────────┬───────────┐
+│           │ Frontend  │  Backend  │
+│   Lead    │  Agent    │   Agent   │  70%
+│ Architect │ (apps/web)│(apps/api) │
+├─────┬─────┴─────┬─────┴──────────┤
+│ Web │    API    │     Shell      │  30%
+└─────┴───────────┴────────────────┘
+```
+
+## Best Practices
+
+- **One lead, 2-3 teammates** — more teammates increases token cost and coordination overhead
+- **Specific tasks** — give teammates focused task descriptions so they don't overlap
+- **Separate files** — assign teammates to different directories or modules to avoid conflicts
+- **Lead as coordinator** — the lead should delegate and review, not do implementation
+- **Use `restart` to apply changes** — after modifying the team config, `tmux-ide restart` applies the new layout
+- **Validate before launch** — always run `tmux-ide validate --json` after config changes
+
+## Comparison with Claude Code Agent Teams
+
+tmux-ide manages the **layout** — it creates the tmux panes and launches Claude with the right flags. Claude Code manages the **coordination** — task lists, messaging, and work assignment.
+
+| Aspect | tmux-ide handles | Claude Code handles |
+|--------|-----------------|-------------------|
+| Pane layout and sizing | Yes | No |
+| Launching lead/teammates | Yes | No |
+| Environment setup | Yes | No |
+| Task coordination | No | Yes |
+| Inter-agent messaging | No | Yes |
+| Shared task list | No | Yes |
+
+This separation means you get reproducible, declarative layouts from tmux-ide with the coordination intelligence of Claude Code's agent teams.

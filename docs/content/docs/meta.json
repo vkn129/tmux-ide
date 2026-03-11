@@ -1,0 +1,13 @@
+{
+  "title": "Docs",
+  "pages": [
+    "index",
+    "getting-started",
+    "configuration",
+    "commands",
+    "programmatic",
+    "templates",
+    "agent-teams",
+    "tips"
+  ]
+}

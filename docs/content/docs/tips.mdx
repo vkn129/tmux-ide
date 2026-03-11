@@ -1,0 +1,94 @@
+---
+title: Tips & Tricks
+description: Get the most out of your tmux IDE
+---
+
+## Navigation
+
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl-b ←/→/↑/↓` | Move between panes |
+| `Ctrl-b z` | Zoom current pane (fullscreen toggle) |
+| `Ctrl-b q` | Flash pane numbers, press number to jump |
+| `Ctrl-b d` | Detach session (keeps everything running) |
+
+## Scrolling
+
+Enter scroll mode with `Ctrl-b [`, then use arrow keys or Page Up/Down. Press `q` to exit.
+
+Or enable mouse support in `~/.tmux.conf`:
+
+```bash
+set -g mouse on
+```
+
+This lets you scroll with your trackpad and click to switch panes.
+
+## Faster Pane Switching
+
+Add to `~/.tmux.conf` for prefix-free navigation with Option+arrow:
+
+```bash
+bind -n M-Left select-pane -L
+bind -n M-Right select-pane -R
+bind -n M-Up select-pane -U
+bind -n M-Down select-pane -D
+```
+
+Reload with `tmux source-file ~/.tmux.conf`.
+
+## macOS: Fix Arrow Key Conflicts
+
+macOS uses `Ctrl+←/→` for switching desktops, which conflicts with tmux.
+
+Go to **System Settings > Desktop & Dock > Mission Control** and disable:
+- Move left a space (`^←`)
+- Move right a space (`^→`)
+
+Or use the Option+arrow bindings above to avoid the conflict entirely.
+
+## Reconnecting
+
+If you close your terminal or detach, your session is still running:
+
+```bash
+# List all sessions
+tmux ls
+
+# Reattach
+tmux attach -t my-project
+```
+
+## Resizing Panes
+
+Drag pane borders with the mouse (if `set -g mouse on` is enabled), or:
+
+```bash
+# From inside tmux:
+Ctrl-b : resize-pane -D 10   # down
+Ctrl-b : resize-pane -U 10   # up
+Ctrl-b : resize-pane -L 10   # left
+Ctrl-b : resize-pane -R 10   # right
+```
+
+## Recommended `~/.tmux.conf`
+
+A minimal config that works well with tmux-ide:
+
+```bash
+# Mouse support
+set -g mouse on
+
+# Option+arrow pane switching (no prefix needed)
+bind -n M-Left select-pane -L
+bind -n M-Right select-pane -R
+bind -n M-Up select-pane -U
+bind -n M-Down select-pane -D
+
+# Start window numbering at 1
+set -g base-index 1
+setw -g pane-base-index 1
+
+# Increase scrollback
+set -g history-limit 10000
+```

@@ -1,0 +1,42 @@
+---
+title: tmux-ide
+description: Turn any project into a tmux-powered terminal IDE
+---
+
+# tmux-ide
+
+Turn any project into a tmux-powered terminal IDE with a simple `ide.yml` config file.
+
+```
+┌───────────────┬───────────────┬───────────────┐
+│               │               │               │
+│   Claude 1    │   Claude 2    │   Claude 3    │
+│               │               │               │
+│               │               │               │
+├───────┬───────┴───────────────┴───────────────┤
+│       │                                       │
+│ Dev   │              Shell                    │
+│ Server│                                       │
+└───────┴───────────────────────────────────────┘
+```
+
+Define your workspace layout in an `ide.yml` file, run `tmux-ide`, and get a fully configured tmux session with labeled panes, dev servers running, and Claude instances ready to go.
+
+## Quick Start
+
+```bash
+# Install globally
+npm i -g tmux-ide
+
+# Or run directly
+npx tmux-ide init    # scaffold an ide.yml
+npx tmux-ide         # launch the IDE
+npx tmux-ide restart # restart with new config
+```
+
+<Cards>
+  <Card title="Getting Started" href="/docs/getting-started" />
+  <Card title="Configuration" href="/docs/configuration" />
+  <Card title="Templates" href="/docs/templates" />
+  <Card title="Agent Teams" href="/docs/agent-teams" />
+</Cards>

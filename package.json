@@ -1,0 +1,44 @@
+{
+  "name": "tmux-ide",
+  "version": "1.0.0",
+  "description": "Turn any project into a tmux-powered terminal IDE with a simple ide.yml",
+  "type": "module",
+  "bin": {
+    "tmux-ide": "./bin/cli.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "scripts",
+    "skill",
+    "templates"
+  ],
+  "scripts": {
+    "dev": "node bin/cli.js",
+    "test": "node --test 'src/**/*.test.js'",
+    "postinstall": "node scripts/postinstall.js",
+    "docs": "cd docs && pnpm dev"
+  },
+  "keywords": [
+    "tmux",
+    "ide",
+    "terminal",
+    "workspace",
+    "developer-tools"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wavyrai/tmux-ide.git"
+  },
+  "homepage": "https://github.com/wavyrai/tmux-ide#readme",
+  "bugs": {
+    "url": "https://github.com/wavyrai/tmux-ide/issues"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "js-yaml": "^4.1.0"
+  }
+}
