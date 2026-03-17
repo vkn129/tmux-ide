@@ -38,7 +38,7 @@ jobs:
         run: pnpm run format:check
 
       - name: Run test suite
-        run: pnpm test
+        run: pnpm test:unit
 
       - name: Validate package contents
         run: pnpm pack:check
