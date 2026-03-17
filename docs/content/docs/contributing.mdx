@@ -1,0 +1,97 @@
+---
+title: Contributing
+description: Development workflow, release checks, and open source project conventions
+---
+
+## Local Setup
+
+Requirements:
+
+- Node.js 18 or newer
+- pnpm 10 or newer
+- tmux 3.0 or newer for manual session smoke tests
+
+Install dependencies from the repo root:
+
+```bash
+pnpm install --frozen-lockfile
+```
+
+## Main Commands
+
+Run these from the repository root:
+
+```bash
+pnpm test
+pnpm docs:build
+pnpm pack:check
+pnpm check
+```
+
+What they do:
+
+- `pnpm test` runs the Node CLI test suite
+- `pnpm docs:build` validates the docs site production build
+- `pnpm pack:check` verifies the published npm package can be packed cleanly
+- `pnpm check` runs the full default pre-push and pre-release check path
+
+`npm publish` is guarded by `prepublishOnly`, so publishing runs `pnpm check` automatically before npm actually publishes the package.
+
+## Integration and Manual Smoke Tests
+
+If tmux is available locally, also run:
+
+```bash
+pnpm test:integration
+```
+
+Recommended manual smoke test:
+
+```bash
+node bin/cli.js init
+node bin/cli.js inspect --json
+node bin/cli.js
+```
+
+Then in a second shell:
+
+```bash
+node bin/cli.js status --json
+node bin/cli.js stop --json
+```
+
+## CI
+
+GitHub Actions validates:
+
+- the CLI test suite on Node 18, 20, and 22
+- the docs production build
+- package packing with `npm pack --dry-run`
+
+That keeps the release path close to the local `pnpm check` workflow while still exercising multiple Node versions in CI.
+
+## Release Workflow
+
+Before publishing a release:
+
+1. Update `CHANGELOG.md` under `Unreleased`.
+2. Confirm the version in `package.json`.
+3. Run `pnpm check`.
+4. Run `pnpm test:integration` if tmux is available.
+5. Do the manual smoke test if the release includes CLI behavior changes.
+6. Move `Unreleased` notes into the final version entry.
+7. Tag and publish the release.
+
+The repository root also includes:
+
+- `CONTRIBUTING.md` for contributor setup
+- `RELEASE.md` for the release checklist
+- `CHANGELOG.md` for release notes
+- `SECURITY.md` for vulnerability reporting
+
+## Pull Request Expectations
+
+- Keep CLI behavior changes covered by tests.
+- Update docs when command behavior or output changes.
+- Prefer focused pull requests over mixed refactors.
+- Run `pnpm check` before opening or updating a pull request.

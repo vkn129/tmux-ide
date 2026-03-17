@@ -1,19 +1,23 @@
-# tmux-ide
+# Docs
 
-This is a Next.js application generated with
-[Create Fumadocs](https://github.com/fuma-nama/fumadocs).
+This is the documentation app for `tmux-ide`. It is a Next.js site built with Fumadocs and published as the project docs surface.
 
-Run development server:
+## Commands
 
 ```bash
-npm run dev
-# or
-pnpm dev
-# or
-yarn dev
+pnpm install --frozen-lockfile
+pnpm docs
+pnpm docs:build
 ```
 
-Open http://localhost:3000 with your browser to see the result.
+Open the local site at `http://localhost:3000` after starting `pnpm docs`.
+
+## Maintenance Notes
+
+- Content pages live under `content/docs/`.
+- The docs navigation is defined in `content/docs/meta.json`.
+- Root-level `pnpm docs:build` delegates to this app's production build and is part of the release check path.
+- Keep docs changes aligned with CLI behavior changes in the main package.
 
 ## Explore
 
@@ -30,16 +34,6 @@ In the project, you can see:
 
 ### Fumadocs MDX
 
-A `source.config.ts` config file has been included, you can customise different options like frontmatter schema.
+A `source.config.ts` config file is included for frontmatter and content-source behavior.
 
 Read the [Introduction](https://fumadocs.dev/docs/mdx) for further details.
-
-## Learn More
-
-To learn more about Next.js and Fumadocs, take a look at the following
-resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js
-  features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-- [Fumadocs](https://fumadocs.dev) - learn about Fumadocs

@@ -1,23 +1,24 @@
 import { resolve } from "node:path";
-import { execSync } from "node:child_process";
 import { getSessionName } from "./lib/yaml-io.js";
+import { outputError } from "./lib/output.js";
+import { killSession } from "./lib/tmux.js";
 
 export async function stop(targetDir, { json } = {}) {
   const dir = resolve(targetDir ?? ".");
   const session = getSessionName(dir);
+  const result = killSession(session);
 
-  try {
-    execSync(`tmux kill-session -t "${session}"`, { stdio: "inherit" });
+  if (result.stopped) {
     if (json) {
       console.log(JSON.stringify({ stopped: session }));
     } else {
       console.log(`Stopped session "${session}"`);
     }
-  } catch {
-    if (json) {
-      console.error(JSON.stringify({ error: `No active session "${session}" found`, code: "NOT_RUNNING" }));
-    } else {
-      console.error(`No active session "${session}" found`);
-    }
+    return;
   }
+
+  outputError(`No active session "${session}" found`, "NOT_RUNNING", {
+    json,
+    exitCode: 1,
+  });
 }

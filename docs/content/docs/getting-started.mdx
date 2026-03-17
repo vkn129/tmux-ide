@@ -92,18 +92,30 @@ tmux-ide ships with a built-in [Claude Code](https://docs.anthropic.com/en/docs/
 **What the skill enables:**
 
 - Ask Claude to "set up a tmux IDE" and it will auto-detect your stack, present layout options with ASCII diagrams, and write the config for you
-- Ask Claude to "add a pane" or "set up agent teams" and it will use the programmatic CLI to modify your `ide.yml`
+- Ask Claude to "add a pane" or "prepare an agent-team layout" and it will use the programmatic CLI to modify your `ide.yml`
 - The team lead agent can self-configure — spawning new teammates, assigning tasks, and restarting the layout
 
 **How it works:**
 
-The install script (both `curl | sh` and `npm install -g`) copies `SKILL.md` into `~/.claude/skills/tmux-ide/`. Claude Code picks this up automatically — no extra configuration needed.
+If Claude Code is already set up on the machine, the global install hook copies `SKILL.md` into `~/.claude/skills/tmux-ide/` and sets `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` in `~/.claude/settings.json`. That keeps the npm install side effects limited to existing Claude Code setups.
 
 If you installed via `npx` (without a global install), you can manually register the skill:
 
 ```bash
 mkdir -p ~/.claude/skills/tmux-ide
 cp "$(npm root -g)/tmux-ide/skill/SKILL.md" ~/.claude/skills/tmux-ide/
+```
+
+If Claude Code is not installed yet, create `~/.claude/` first or complete Claude Code setup before using the automatic registration path.
+
+And if you want agent teams enabled for Claude Code outside tmux-ide-launched sessions, add this to `~/.claude/settings.json`:
+
+```json
+{
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  }
+}
 ```
 
 Once installed, just ask Claude Code something like:

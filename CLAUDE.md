@@ -7,6 +7,7 @@ A CLI tool that turns any project into a tmux-powered terminal IDE using a simpl
 ```bash
 tmux-ide              # Launch IDE from ide.yml
 tmux-ide init         # Scaffold ide.yml (auto-detects stack)
+tmux-ide inspect      # Show resolved config + live tmux state
 tmux-ide stop         # Kill session
 tmux-ide attach       # Reattach to running session
 ```
@@ -14,19 +15,19 @@ tmux-ide attach       # Reattach to running session
 ## ide.yml Format
 
 ```yaml
-name: project-name          # tmux session name
+name: project-name # tmux session name
 
-before: pnpm install        # optional pre-launch hook
+before: pnpm install # optional pre-launch hook
 
 rows:
-  - size: 70%               # row height percentage
+  - size: 70% # row height percentage
     panes:
-      - title: Claude 1     # pane border label
-        command: claude      # command to run (optional)
-        size: 50%            # pane width percentage (optional)
-        dir: apps/web        # per-pane working directory (optional)
-        focus: true          # initial focus (optional)
-        env:                 # environment variables (optional)
+      - title: Claude 1 # pane border label
+        command: claude # command to run (optional)
+        size: 50% # pane width percentage (optional)
+        dir: apps/web # per-pane working directory (optional)
+        focus: true # initial focus (optional)
+        env: # environment variables (optional)
           PORT: 3000
 
   - panes:
@@ -34,10 +35,10 @@ rows:
         command: pnpm dev
       - title: Shell
 
-team:                        # optional agent team config
+team: # optional agent team config
   name: my-team
 
-theme:                       # optional color overrides
+theme: # optional color overrides
   accent: colour75
   border: colour238
   bg: colour235
@@ -50,30 +51,38 @@ theme:                       # optional color overrides
 panes:
   - title: Lead
     command: claude
-    role: lead               # "lead" or "teammate"
+    role: lead # optional layout metadata: "lead" or "teammate"
     focus: true
   - title: Frontend
     command: claude
     role: teammate
-    task: "Work on components" # initial task for teammate
+    task: "Work on components" # suggested task text for your prompts
 ```
 
 ## Architecture
 
-- `bin/cli.js` — Entry point, routes to commands
-- `src/launch.js` — Parses ide.yml and builds tmux layout
+- `bin/cli.js` — CLI entry point and top-level error boundary
+- `src/launch.js` — Launch orchestration for tmux sessions
+- `src/restart.js` — Stop + relaunch flow
 - `src/init.js` — Scaffolds ide.yml with smart detection
 - `src/stop.js` — Kills the tmux session
 - `src/attach.js` — Reattach to running session
 - `src/ls.js` — List tmux sessions
 - `src/doctor.js` — System health check
 - `src/status.js` — Session status query
+- `src/inspect.js` — Resolved config + live tmux inspection
 - `src/validate.js` — Config validation
 - `src/detect.js` — Project stack detection
 - `src/config.js` — Programmatic config mutations
+- `src/lib/tmux.js` — Shared tmux process helpers
+- `src/lib/launch-plan.js` — Pane startup planning + theme option generation
 - `src/lib/yaml-io.js` — Shared config read/write
 - `src/lib/dot-path.js` — Dot-notation get/set
-- `src/lib/output.js` — JSON/human output helper
+- `src/lib/output.js` — Structured CLI error/output helpers
+- `src/lib/sizes.js` — Row/pane sizing math
+- `src/*.test.js`, `src/lib/*.test.js` — CLI, unit, and integration coverage
+- `docs/content/docs/` — User-facing docs site content
+- `.github/workflows/ci.yml` — CI quality gates and release checks
 - `templates/` — Preset configs (default, nextjs, convex, vite, python, go, agent-team, agent-team-nextjs, agent-team-monorepo)
 
 ## Programmatic CLI Reference
@@ -106,6 +115,10 @@ tmux-ide ls --json
 # System check
 tmux-ide doctor --json
 # → { "ok": true, "checks": [...] }
+
+# Inspect resolved config + live tmux data
+tmux-ide inspect --json
+# → { "valid": true, "session": "...", "resolved": {...}, "tmux": {...} }
 ```
 
 ### Write Commands
@@ -162,6 +175,7 @@ tmux-ide init --template nextjs  # Use specific template
 3. **Present 2-3 layout options to the user using ASCII diagrams** before writing any config. Show the pane arrangement visually so the user can pick or tweak. Example:
 
    **Option A — Dual Claude + Dev (recommended)**
+
    ```
    ┌─────────────────┬─────────────────┐
    │                 │                 │
@@ -173,6 +187,7 @@ tmux-ide init --template nextjs  # Use specific template
    ```
 
    **Option B — Triple Claude**
+
    ```
    ┌───────────┬───────────┬───────────┐
    │           │           │           │
@@ -184,6 +199,7 @@ tmux-ide init --template nextjs  # Use specific template
    ```
 
    **Option C — Single Claude + wide dev**
+
    ```
    ┌─────────────────────────────────────┐
    │             Claude                  │  60%
@@ -221,15 +237,33 @@ For coordinated multi-agent development:
 2. Assign tasks: `tmux-ide config set rows.0.panes.1.task "Work on frontend"`
 3. Validate: `tmux-ide validate --json`
 4. Launch: `tmux-ide` or `tmux-ide restart`
+5. In the lead pane, ask Claude to create and organize the team in natural language
 
-The team lead can self-configure — add/remove teammates, assign tasks, and restart to apply changes.
+tmux-ide prepares the tmux layout and enables `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` when `team` is configured. It does not synthesize hidden Claude CLI flags for team creation.
+
+The team lead can self-configure the workspace layout with `tmux-ide config ...`, then `restart` to apply changes.
+
+## Contributor Workflow
+
+```bash
+pnpm install --frozen-lockfile
+pnpm lint
+pnpm format:check
+pnpm test
+pnpm pack:check
+```
+
+- Main release gate: `pnpm check`
+- Live tmux coverage: `pnpm test:integration`
+- Docs build: `pnpm docs:build`
 
 ### Best practices
 
 - Always use `--json` for programmatic access
 - Always run `validate --json` after config mutations
+- Prefer `inspect --json` when debugging config/runtime mismatches
 - Top row should be ~70% height for Claude panes
-- 2-3 Claude panes in the top row (or lead + 2 teammates for agent teams)
+- 2-3 Claude panes in the top row (or lead + 2 teammate-ready panes for agent teams)
 - Dev servers + shell in the bottom row
 - Use `detect --json` first to understand the project stack
-- For agent teams: assign specific tasks to teammates for focused parallel work
+- For agent teams: assign specific tasks to teammate panes for focused parallel work

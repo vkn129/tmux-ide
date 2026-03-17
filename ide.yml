@@ -22,5 +22,5 @@ rows:
 
   - panes:
       - title: Docs Dev
-        command: cd docs && pnpm dev
+        command: pnpm docs
       - title: Shell

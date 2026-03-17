@@ -17,6 +17,7 @@ tmux-ide turns any project into a tmux-powered terminal IDE using a simple `ide.
 3. **Present 2-3 layout options using ASCII diagrams** before writing config. Example:
 
    **Option A — Dual Claude + Dev (recommended)**
+
    ```
    ┌─────────────────┬─────────────────┐
    │                 │                 │
@@ -28,6 +29,7 @@ tmux-ide turns any project into a tmux-powered terminal IDE using a simple `ide.
    ```
 
    **Option B — Triple Claude**
+
    ```
    ┌───────────┬───────────┬───────────┐
    │           │           │           │
@@ -39,6 +41,7 @@ tmux-ide turns any project into a tmux-powered terminal IDE using a simple `ide.
    ```
 
    **Option C — Single Claude + wide dev**
+
    ```
    ┌─────────────────────────────────────┐
    │             Claude                  │  60%
@@ -55,7 +58,7 @@ tmux-ide turns any project into a tmux-powered terminal IDE using a simple `ide.
 
 ## Agent Teams workflow
 
-Agent teams coordinate multiple Claude Code instances where a lead delegates tasks to teammates. Each gets its own tmux pane.
+Agent teams coordinate multiple Claude Code instances where a lead delegates tasks to teammates. Each gets its own tmux pane, and tmux-ide prepares that layout before Claude starts the actual team workflow.
 
 ### When to suggest agent teams
 
@@ -66,38 +69,50 @@ Agent teams coordinate multiple Claude Code instances where a lead delegates tas
 
 ### Prerequisites
 
-Agent teams require `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`. tmux-ide sets this automatically when `team` is configured in `ide.yml`.
+Agent teams require `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`. The tmux-ide install hook enables this in Claude Code settings, and tmux-ide also sets it automatically inside tmux sessions when `team` is configured in `ide.yml`.
 
 ### Setup from scratch
 
 1. **Scaffold with agent team template:**
+
    ```bash
    tmux-ide init --template agent-team
    ```
 
 2. **Or enable teams on an existing config:**
+
    ```bash
    tmux-ide config enable-team --name "my-team"
    ```
+
    This finds all `command: claude` panes and assigns the first as `lead`, the rest as `teammate`.
 
-3. **Assign initial tasks to teammates:**
+3. **Assign initial task hints to teammate panes:**
+
    ```bash
    tmux-ide config set rows.0.panes.1.task "Work on frontend components"
    tmux-ide config set rows.0.panes.2.task "Work on API routes"
    ```
 
-4. **Validate and launch:**
+4. **Validate and launch the layout:**
+
    ```bash
    tmux-ide validate --json
    tmux-ide
    ```
 
+5. **Inside the lead pane, ask Claude to form the team:**
+
+   ```text
+   Start an agent team named my-team. Use the Frontend pane for components and the Backend pane for API routes.
+   ```
+
 ### Present team layout options
 
-When suggesting agent team layouts, show the roles:
+When suggesting agent team layouts, show the roles and note that Claude will create the team after launch:
 
 **Option A — Lead + 2 Teammates**
+
 ```
 ┌───────────┬───────────┬───────────┐
 │           │           │           │
@@ -109,6 +124,7 @@ When suggesting agent team layouts, show the roles:
 ```
 
 **Option B — Lead + 3 Specialized Teammates**
+
 ```
 ┌────────┬────────┬────────┬────────┐
 │        │Frontend│Backend │ Review │
@@ -121,7 +137,7 @@ When suggesting agent team layouts, show the roles:
 
 ### Team lead self-configuration
 
-When running as the team lead inside a tmux-ide session, you can reconfigure the team:
+When running as the team lead inside a tmux-ide session, you can reconfigure the layout for the team:
 
 ```bash
 # Read current config
@@ -200,27 +216,27 @@ tmux-ide init         # Scaffold config
 - 2-3 Claude panes in the top row (or lead + 2 teammates for teams)
 - Dev servers + shell in the bottom row
 - Use `detect --json` first to understand the project stack
-- For agent teams: assign specific tasks to teammates for focused parallel work
+- For agent teams: assign specific tasks to teammate panes so your prompts stay focused
 - The team lead should have `focus: true` for easy access
 
 ## ide.yml format
 
 ```yaml
 name: project-name
-before: pnpm install        # optional pre-launch hook
-team:                        # optional agent team config
+before: pnpm install # optional pre-launch hook
+team: # optional agent team config
   name: my-team
 rows:
   - size: 70%
     panes:
       - title: Lead
         command: claude
-        role: lead           # "lead" or "teammate"
+        role: lead # optional layout metadata: "lead" or "teammate"
         focus: true
       - title: Teammate 1
         command: claude
         role: teammate
-        task: "Work on frontend"  # initial task for teammate
+        task: "Work on frontend" # suggested task text for your prompts
       - title: Teammate 2
         command: claude
         role: teammate
@@ -228,7 +244,7 @@ rows:
   - panes:
       - title: Dev Server
         command: pnpm dev
-        dir: apps/web        # per-pane working directory
+        dir: apps/web # per-pane working directory
         env:
           PORT: 3000
       - title: Shell

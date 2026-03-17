@@ -5,7 +5,7 @@ export async function ls({ json } = {}) {
   try {
     raw = execSync(
       'tmux list-sessions -F "#{session_name}|#{session_created}|#{session_attached}"',
-      { encoding: "utf-8" }
+      { encoding: "utf-8" },
     ).trim();
   } catch {
     if (json) {
@@ -35,8 +35,6 @@ export async function ls({ json } = {}) {
   console.log("─".repeat(54));
   for (const s of sessions) {
     const date = new Date(s.created).toLocaleString();
-    console.log(
-      s.name.padEnd(24) + date.padEnd(22) + (s.attached ? "yes" : "no")
-    );
+    console.log(s.name.padEnd(24) + date.padEnd(22) + (s.attached ? "yes" : "no"));
   }
 }

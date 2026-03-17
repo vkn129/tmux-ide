@@ -1,6 +1,9 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { suggestConfig } from "./detect.js";
+import { detectStack, suggestConfig } from "./detect.js";
+import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 describe("suggestConfig", () => {
   it("creates Next.js config with pnpm", () => {
@@ -111,5 +114,30 @@ describe("suggestConfig", () => {
       language: null,
     });
     assert.strictEqual(config.name, "my-app");
+  });
+});
+
+describe("detectStack reasoning", () => {
+  it("includes reasons for detected frameworks and command choices", () => {
+    const dir = mkdtempSync(join(tmpdir(), "tmux-ide-detect-test-"));
+
+    try {
+      writeFileSync(
+        join(dir, "package.json"),
+        JSON.stringify({
+          dependencies: { next: "latest", convex: "latest" },
+          scripts: { dev: "next dev" },
+        }),
+      );
+      writeFileSync(join(dir, "pnpm-lock.yaml"), "lockfileVersion: 9");
+
+      const detected = detectStack(dir);
+      assert.strictEqual(detected.packageManager, "pnpm");
+      assert.ok(detected.reasons.some((reason) => reason.includes("pnpm-lock.yaml")));
+      assert.ok(detected.reasons.some((reason) => reason.includes('dependency "next"')));
+      assert.ok(detected.reasons.some((reason) => reason.includes("dev command")));
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

@@ -8,6 +8,17 @@ export function output(data, { json } = {}) {
   }
 }
 
+export class CommandError extends Error {
+  constructor(message, { code, exitCode = 1, details, json = false } = {}) {
+    super(message);
+    this.name = "CommandError";
+    this.code = code;
+    this.exitCode = exitCode;
+    this.details = details;
+    this.json = json;
+  }
+}
+
 export function printLayout(config) {
   const INNER = 40;
   const rows = config.rows ?? [];
@@ -62,11 +73,17 @@ export function printLayout(config) {
   }
 }
 
-export function outputError(message, code, { json } = {}) {
+export function outputError(message, code, { json, exitCode = 1, details } = {}) {
+  throw new CommandError(message, { code, exitCode, details, json });
+}
+
+export function printCommandError(error, { json = error?.json ?? false } = {}) {
   if (json) {
-    console.error(JSON.stringify({ error: message, code }, null, 2));
+    const payload = { error: error.message, code: error.code };
+    if (error.details !== undefined) payload.details = error.details;
+    console.error(JSON.stringify(payload, null, 2));
   } else {
-    console.error(message);
+    console.error(error.message);
   }
-  process.exit(code ?? 1);
+  process.exit(error.exitCode ?? 1);
 }

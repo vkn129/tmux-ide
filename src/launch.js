@@ -2,66 +2,159 @@ import { resolve } from "node:path";
 import { execSync } from "node:child_process";
 import { readConfig, getSessionName } from "./lib/yaml-io.js";
 import { computeSizes, toSplitPercents } from "./lib/sizes.js";
+import { outputError } from "./lib/output.js";
+import { buildThemeOptions, collectPaneStartupPlan } from "./lib/launch-plan.js";
+import {
+  attachSession,
+  createDetachedSession,
+  getPaneCurrentCommand,
+  hasSession,
+  runSessionCommand,
+  selectPane,
+  sendLiteral,
+  setPaneTitle,
+  setSessionEnvironment,
+  splitPane,
+} from "./lib/tmux.js";
+import { validateConfig } from "./validate.js";
 
-function tmux(cmd) {
-  execSync(`tmux ${cmd}`, { stdio: "inherit" });
+function sleepMs(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 }
 
-function tmuxQuiet(cmd) {
-  try {
-    execSync(`tmux ${cmd}`, { stdio: "ignore" });
-  } catch {}
-}
+export function waitForPaneCommand(
+  targetPane,
+  expectedCommands,
+  { attempts = 20, delayMs = 100, getCurrentCommand = getPaneCurrentCommand, sleep = sleepMs } = {},
+) {
+  const allowed = new Set(expectedCommands.map((command) => command.toLowerCase()));
 
-export async function launch(targetDir) {
-  const dir = resolve(targetDir ?? ".");
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    try {
+      const current = getCurrentCommand(targetPane)?.trim().toLowerCase();
+      if (allowed.has(current)) return true;
+    } catch {
+      // Fall through to retry; tmux can briefly report transitional state.
+    }
 
-  let config;
-  try {
-    ({ config } = readConfig(dir));
-  } catch {
-    console.error(`No ide.yml found in ${dir}. Run "tmux-ide init" to create one.`);
-    process.exit(1);
-  }
-
-  // Validate config structure before building tmux session
-  if (!Array.isArray(config.rows) || config.rows.length === 0) {
-    console.error("Invalid ide.yml: 'rows' must be a non-empty array");
-    console.error("Run: tmux-ide validate");
-    process.exit(1);
-  }
-  for (const row of config.rows) {
-    if (!Array.isArray(row.panes) || row.panes.length === 0) {
-      console.error("Invalid ide.yml: each row must have a non-empty 'panes' array");
-      console.error("Run: tmux-ide validate");
-      process.exit(1);
+    if (attempt < attempts - 1) {
+      sleep(delayMs);
     }
   }
+
+  return false;
+}
+
+export function buildPaneMap(rows, dir, rootPaneId, splitPane) {
+  const rowSizes = computeSizes(rows);
+  const rowSplitPercents = toSplitPercents(rowSizes);
+
+  // Create all rows vertically first so each row spans the full width.
+  const rowPaneIds = [rootPaneId];
+  for (let rowIdx = 1; rowIdx < rows.length; rowIdx++) {
+    const splitFrom = rowPaneIds[rowIdx - 1];
+    const newPaneId = splitPane({
+      targetPane: splitFrom,
+      direction: "vertical",
+      cwd: dir,
+      percent: rowSplitPercents[rowIdx - 1],
+    });
+    rowPaneIds.push(newPaneId);
+  }
+
+  const paneMap = [];
+  const firstPanesOfRows = new Set(rowPaneIds);
+
+  for (let rowIdx = 0; rowIdx < rows.length; rowIdx++) {
+    const row = rows[rowIdx];
+    const panes = row.panes ?? [];
+    const rowPaneId = rowPaneIds[rowIdx];
+    const rowPanes = [rowPaneId];
+
+    const paneSizes = computeSizes(panes);
+    const paneSplitPercents = toSplitPercents(paneSizes);
+
+    for (let paneIdx = 1; paneIdx < panes.length; paneIdx++) {
+      const pane = panes[paneIdx];
+      const targetPane = rowPanes[paneIdx - 1];
+      const paneDir = pane.dir ? resolve(dir, pane.dir) : dir;
+      const newPaneId = splitPane({
+        targetPane,
+        direction: "horizontal",
+        cwd: paneDir,
+        percent: paneSplitPercents[paneIdx - 1],
+      });
+      rowPanes.push(newPaneId);
+    }
+
+    paneMap.push(rowPanes);
+  }
+
+  return { paneMap, firstPanesOfRows };
+}
+
+function loadLaunchConfig(dir, { json } = {}) {
+  let config;
+
+  try {
+    ({ config } = readConfig(dir));
+  } catch (error) {
+    if (error?.code === "ENOENT") {
+      outputError(
+        `No ide.yml found in ${dir}. Run "tmux-ide init" or "tmux-ide detect --write" to create one.`,
+        "CONFIG_NOT_FOUND",
+        { json },
+      );
+    }
+
+    outputError(`Cannot read ide.yml: ${error.message}`, "READ_ERROR", { json });
+  }
+
+  const errors = validateConfig(config);
+  if (errors.length > 0) {
+    outputError(
+      `Invalid ide.yml in ${dir}. Run "tmux-ide validate" for details.`,
+      "INVALID_CONFIG",
+      { json },
+    );
+  }
+
+  return config;
+}
+
+function runBeforeHook(command, dir, { json } = {}) {
+  if (!command) return;
+
+  console.log(`Running: ${command}`);
+
+  try {
+    execSync(command, { cwd: dir, stdio: "inherit" });
+  } catch {
+    const message = json
+      ? `The "before" hook failed: ${command}`
+      : `The before hook failed: ${command}`;
+    outputError(message, "BEFORE_HOOK_FAILED", { json });
+  }
+}
+
+export async function launch(targetDir, { json, attach = true } = {}) {
+  const dir = resolve(targetDir ?? ".");
+  const config = loadLaunchConfig(dir, { json });
 
   const session = config.name ?? getSessionName(dir);
   const rows = config.rows;
   const theme = config.theme ?? {};
   const team = config.team ?? null;
 
-  // Run before hook
-  if (config.before) {
-    console.log(`Running: ${config.before}`);
-    try {
-      execSync(config.before, { cwd: dir, stdio: "inherit" });
-    } catch (e) {
-      console.error(`"before" hook failed: ${config.before}`);
-      process.exit(1);
-    }
-  }
+  runBeforeHook(config.before, dir, { json });
 
   // If session already exists, just attach to it
-  try {
-    execSync(`tmux has-session -t "${session}"`, { stdio: "ignore" });
+  if (hasSession(session)) {
     console.log(`Session "${session}" is already running. Attaching...`);
-    tmux(`attach -t "${session}"`);
+    if (attach) {
+      attachSession(session);
+    }
     return;
-  } catch {
-    // Session doesn't exist, continue with creation
   }
 
   // Get terminal dimensions
@@ -69,170 +162,71 @@ export async function launch(targetDir) {
   const lines = process.stdout.rows ?? 50;
 
   // Create session with first pane
-  tmux(`new-session -d -s "${session}" -c "${dir}" -x ${cols} -y ${lines}`);
+  const rootPaneId = createDetachedSession(session, dir, { cols, lines });
 
   // Set agent teams env var if team config is present
   if (team) {
-    tmux(`set-environment -t "${session}" CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS 1`);
+    setSessionEnvironment(session, "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS", "1");
   }
 
-  // Compute row sizes and convert to tmux split percentages
-  const rowSizes = computeSizes(rows);
-  const rowSplitPercents = toSplitPercents(rowSizes);
+  const { paneMap, firstPanesOfRows } = buildPaneMap(
+    rows,
+    dir,
+    rootPaneId,
+    ({ targetPane, direction, cwd, percent }) => splitPane(targetPane, direction, cwd, percent),
+  );
 
-  // Phase 1: Create all rows (vertical splits) BEFORE any horizontal splits.
-  // This ensures each row spans the full window width.
-  const rowPaneIndices = [0]; // rowPaneIndices[i] = tmux pane index for row i
-  let nextPaneIndex = 1;
+  const { focusPane, leadPane, paneActions, teammateCommands } = collectPaneStartupPlan(
+    rows,
+    paneMap,
+    firstPanesOfRows,
+    dir,
+    team,
+  );
 
-  for (let rowIdx = 1; rowIdx < rows.length; rowIdx++) {
-    const splitFrom = rowPaneIndices[rowIdx - 1];
-    tmux(
-      `split-window -t "${session}:0.${splitFrom}" -v -c "${dir}" -p ${rowSplitPercents[rowIdx - 1]}`
-    );
-    rowPaneIndices.push(nextPaneIndex);
-    nextPaneIndex++;
-  }
-
-  // Phase 2: Create panes within each row (horizontal splits).
-  // paneMap[row][col] = tmux pane index
-  const paneMap = [];
-  const firstPanesOfRows = new Set(rowPaneIndices);
-
-  for (let rowIdx = 0; rowIdx < rows.length; rowIdx++) {
-    const row = rows[rowIdx];
-    const panes = row.panes ?? [];
-    const rowPane = rowPaneIndices[rowIdx];
-    const rowPanes = [rowPane];
-
-    // Compute pane sizes within this row and convert to split percentages
-    const paneSizes = computeSizes(panes);
-    const paneSplitPercents = toSplitPercents(paneSizes);
-
-    // Split this row's panes horizontally
-    for (let paneIdx = 1; paneIdx < panes.length; paneIdx++) {
-      const pane = panes[paneIdx];
-      const targetPane = rowPanes[paneIdx - 1];
-
-      // Per-pane working directory
-      const paneDir = pane.dir ? resolve(dir, pane.dir) : dir;
-
-      tmux(
-        `split-window -t "${session}:0.${targetPane}" -h -c "${paneDir}" -p ${paneSplitPercents[paneIdx - 1]}`
-      );
-      rowPanes.push(nextPaneIndex);
-      nextPaneIndex++;
+  for (const action of paneActions) {
+    if (action.title) {
+      setPaneTitle(action.targetPane, action.title);
     }
 
-    paneMap.push(rowPanes);
-  }
-
-  // Build the command for a pane, transforming claude commands for team roles
-  function buildCommand(p) {
-    if (!p.command) return null;
-    if (!team || !p.role) return p.command;
-
-    if (p.role === "lead") {
-      return `claude --team "${team.name}"`;
-    } else if (p.role === "teammate") {
-      let cmd = `claude --teammate-mode in-process --team "${team.name}"`;
-      if (p.task) {
-        cmd += ` --task "${p.task.replace(/"/g, '\\"')}"`;
-      }
-      return cmd;
+    if (action.chdir) {
+      sendLiteral(action.targetPane, `cd ${action.chdir}`);
     }
-    return p.command;
-  }
 
-  // Send commands, set titles, handle env/focus/dir for first panes
-  // Two-pass approach for teams: lead + non-teammates first, then teammates
-  let focusPane = paneMap[0][0];
-  const teammateCommands = [];
+    for (const exportCommand of action.exports) {
+      sendLiteral(action.targetPane, exportCommand);
+    }
 
-  for (let rowIdx = 0; rowIdx < rows.length; rowIdx++) {
-    const row = rows[rowIdx];
-    const panes = row.panes ?? [];
-    for (let paneIdx = 0; paneIdx < panes.length; paneIdx++) {
-      const p = panes[paneIdx];
-      const tmuxPane = paneMap[rowIdx][paneIdx];
-
-      if (p.title) {
-        tmux(`select-pane -t "${session}:0.${tmuxPane}" -T "${p.title}"`);
-      }
-
-      // Per-pane directory for first panes of each row (created with project root)
-      if (p.dir && firstPanesOfRows.has(tmuxPane)) {
-        const paneDir = resolve(dir, p.dir);
-        tmux(`send-keys -t "${session}:0.${tmuxPane}" "cd ${paneDir}" C-m`);
-      }
-
-      // Environment variables
-      if (p.env && typeof p.env === "object") {
-        for (const [key, val] of Object.entries(p.env)) {
-          tmux(`send-keys -t "${session}:0.${tmuxPane}" "export ${key}=${val}" C-m`);
-        }
-      }
-
-      const cmd = buildCommand(p);
-      if (cmd) {
-        if (team && p.role === "teammate") {
-          // Defer teammate launches to second pass
-          teammateCommands.push({ pane: tmuxPane, cmd });
-        } else {
-          tmux(`send-keys -t "${session}:0.${tmuxPane}" "${cmd}" C-m`);
-        }
-      }
-
-      if (p.focus) {
-        focusPane = tmuxPane;
-      }
+    if (action.command) {
+      sendLiteral(action.targetPane, action.command);
     }
   }
 
-  // Second pass: launch teammates after a brief delay for the lead to initialize
+  // Keep a second pass hook available for future staged startup behavior.
   if (teammateCommands.length > 0) {
-    execSync("sleep 2");
+    if (leadPane) {
+      waitForPaneCommand(leadPane, ["claude"]);
+    }
     for (const { pane: p, cmd } of teammateCommands) {
-      tmux(`send-keys -t "${session}:0.${p}" "${cmd}" C-m`);
+      sendLiteral(p, cmd);
     }
   }
 
-  // Apply styling
-  const accent = theme.accent ?? "colour75";
-  const border = theme.border ?? "colour238";
-  const bg = theme.bg ?? "colour235";
-  const fg = theme.fg ?? "colour248";
-
-  tmux(`set-option -t "${session}" pane-border-status top`);
-  tmux(
-    `set-option -t "${session}" pane-border-format " #{?pane_active,#[bold]▸,·} #T "`
-  );
-  tmux(`set-option -t "${session}" pane-border-style "fg=${border}"`);
-  tmux(`set-option -t "${session}" pane-active-border-style "fg=${accent}"`);
-
-  tmux(`set-option -t "${session}" status-style "bg=${bg},fg=${fg}"`);
-  tmux(
-    `set-option -t "${session}" status-left "#[fg=colour0,bg=${accent},bold]  ${session.toUpperCase()} IDE #[default] "`
-  );
-  tmux(`set-option -t "${session}" status-left-length 30`);
-  tmux(
-    `set-option -t "${session}" status-right "#[fg=colour243]%H:%M #[fg=${accent}]│ #[fg=${fg}]%b %d "`
-  );
-  tmux(`set-option -t "${session}" status-justify centre`);
-  tmux(
-    `set-option -t "${session}" window-status-current-format "#[fg=${accent},bold]●"`
-  );
-  tmux(
-    `set-option -t "${session}" window-status-format "#[fg=${border}]○"`
-  );
+  for (const command of buildThemeOptions(session, theme)) {
+    runSessionCommand(command);
+  }
 
   // Focus the correct pane
-  tmux(`select-pane -t "${session}:0.${focusPane}"`);
+  selectPane(focusPane);
 
   // Launch summary
   const totalPanes = rows.reduce((sum, r) => sum + (r.panes?.length ?? 0), 0);
-  console.log(`Starting "${session}" (${rows.length} row${rows.length === 1 ? "" : "s"}, ${totalPanes} pane${totalPanes === 1 ? "" : "s"})...`);
+  console.log(
+    `Starting "${session}" (${rows.length} row${rows.length === 1 ? "" : "s"}, ${totalPanes} pane${totalPanes === 1 ? "" : "s"})...`,
+  );
 
   // Attach
-  tmux(`attach -t "${session}"`);
+  if (attach) {
+    attachSession(session);
+  }
 }

@@ -35,7 +35,7 @@ Force a specific template:
 tmux-ide init --template nextjs
 ```
 
-Available templates: `default`, `nextjs`, `convex`, `vite`, `python`, `go`
+Available templates: `default`, `nextjs`, `convex`, `vite`, `python`, `go`, `agent-team`, `agent-team-nextjs`, `agent-team-monorepo`
 
 Will refuse to overwrite an existing `ide.yml`.
 
@@ -88,6 +88,7 @@ tmux-ide doctor
 ```
 
 Checks:
+
 - tmux installed
 - tmux version ≥ 3.0
 - Node.js ≥ 18
@@ -104,6 +105,24 @@ tmux-ide status --json
 ```
 
 Returns session name, running state, config existence, and pane details.
+
+## `tmux-ide inspect`
+
+Show the effective project config and current runtime state in one place.
+
+```bash
+tmux-ide inspect
+tmux-ide inspect --json
+```
+
+Returns:
+
+- resolved config path and session name
+- validation status and errors
+- row and pane counts
+- focus target
+- team and theme config
+- live tmux pane state when the session is running
 
 ## `tmux-ide validate`
 
@@ -127,6 +146,8 @@ tmux-ide detect --write    # write suggested config to ide.yml
 ```
 
 Detects: package manager (npm/pnpm/yarn/bun), frameworks (Next.js, Vite, Convex, Remix, Nuxt, FastAPI, Django, Flask, Go, Rust), and dev commands.
+
+`detect` also explains why it reached those conclusions. Human output includes a `Reasoning:` section, and JSON output includes a `reasons` array under `detected`.
 
 ## `tmux-ide config`
 
@@ -183,8 +204,8 @@ Removes the `team` config and all `role`/`task` fields from panes.
 
 ## Global Flags
 
-| Flag | Description |
-|------|-------------|
-| `--json` | Output as structured JSON (all commands) |
-| `--template <name>` | Use a specific template for `init` |
-| `--write` | Write detected config for `detect` |
+| Flag                | Description                              |
+| ------------------- | ---------------------------------------- |
+| `--json`            | Output as structured JSON (all commands) |
+| `--template <name>` | Use a specific template for `init`       |
+| `--write`           | Write detected config for `detect`       |

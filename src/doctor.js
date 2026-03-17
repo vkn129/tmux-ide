@@ -18,7 +18,7 @@ export async function doctor({ json } = {}) {
     check("tmux installed", () => {
       execSync("which tmux", { stdio: "ignore" });
       return "found";
-    })
+    }),
   );
 
   checks.push(
@@ -27,7 +27,7 @@ export async function doctor({ json } = {}) {
       const num = parseFloat(version.replace(/[^0-9.]/g, ""));
       if (num < 3.0) throw new Error(`${version} (need ≥ 3.0)`);
       return version;
-    })
+    }),
   );
 
   checks.push(
@@ -35,17 +35,22 @@ export async function doctor({ json } = {}) {
       const major = parseInt(process.versions.node.split(".")[0]);
       if (major < 18) throw new Error(`Node ${process.versions.node} (need ≥ 18)`);
       return `v${process.versions.node}`;
-    })
+    }),
   );
 
   checks.push(
     check("256-color terminal", () => {
       const term = process.env.TERM ?? "";
-      if (!term.includes("256color") && !term.includes("ghostty") && !term.includes("kitty") && term !== "tmux-256color") {
+      if (
+        !term.includes("256color") &&
+        !term.includes("ghostty") &&
+        !term.includes("kitty") &&
+        term !== "tmux-256color"
+      ) {
         throw new Error(`$TERM is "${term}"`);
       }
       return term;
-    })
+    }),
   );
 
   checks.push(
@@ -53,20 +58,25 @@ export async function doctor({ json } = {}) {
       const path = resolve(".", "ide.yml");
       if (!existsSync(path)) throw new Error("not found in current directory");
       return "found";
-    })
+    }),
   );
 
   checks.push(
-    check("Claude Code agent teams", () => {
-      if (process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS !== "1") {
-        throw new Error("not set (enable with CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1)");
-      }
-      return "enabled";
-    }, { optional: true })
+    check(
+      "Claude Code agent teams",
+      () => {
+        if (process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS !== "1") {
+          throw new Error("not set (enable with CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1)");
+        }
+        return "enabled";
+      },
+      { optional: true },
+    ),
   );
 
+  const allPass = checks.every((c) => c.pass || c.optional);
+
   if (json) {
-    const allPass = checks.every((c) => c.pass || c.optional);
     console.log(JSON.stringify({ ok: allPass, checks }, null, 2));
     return;
   }
@@ -77,6 +87,5 @@ export async function doctor({ json } = {}) {
     console.log(`${color}${icon}\x1b[0m ${c.label} — ${c.detail}`);
   }
 
-  const allPass = checks.every((c) => c.pass);
   if (!allPass) process.exitCode = 1;
 }

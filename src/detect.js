@@ -20,60 +20,98 @@ export function detectStack(dir) {
     frameworks: [],
     devCommand: null,
     language: null,
+    reasons: [],
   };
 
   // Detect package manager from lockfile
-  if (fileExists(dir, "pnpm-lock.yaml")) detected.packageManager = "pnpm";
-  else if (fileExists(dir, "bun.lockb") || fileExists(dir, "bun.lock")) detected.packageManager = "bun";
-  else if (fileExists(dir, "yarn.lock")) detected.packageManager = "yarn";
-  else if (fileExists(dir, "package-lock.json")) detected.packageManager = "npm";
+  if (fileExists(dir, "pnpm-lock.yaml")) {
+    detected.packageManager = "pnpm";
+    detected.reasons.push('Detected pnpm from "pnpm-lock.yaml".');
+  } else if (fileExists(dir, "bun.lockb") || fileExists(dir, "bun.lock")) {
+    detected.packageManager = "bun";
+    detected.reasons.push('Detected bun from "bun.lockb" or "bun.lock".');
+  } else if (fileExists(dir, "yarn.lock")) {
+    detected.packageManager = "yarn";
+    detected.reasons.push('Detected yarn from "yarn.lock".');
+  } else if (fileExists(dir, "package-lock.json")) {
+    detected.packageManager = "npm";
+    detected.reasons.push('Detected npm from "package-lock.json".');
+  }
 
   const pkg = readJson(dir, "package.json");
   if (pkg) {
     detected.language = "javascript";
+    detected.reasons.push('Detected JavaScript from "package.json".');
     const deps = { ...pkg.dependencies, ...pkg.devDependencies };
 
-    if (deps["next"]) detected.frameworks.push("next");
-    if (deps["convex"]) detected.frameworks.push("convex");
-    if (deps["vite"]) detected.frameworks.push("vite");
-    if (deps["remix"] || deps["@remix-run/node"]) detected.frameworks.push("remix");
-    if (deps["nuxt"]) detected.frameworks.push("nuxt");
-    if (deps["astro"]) detected.frameworks.push("astro");
-    if (deps["svelte"] || deps["@sveltejs/kit"]) detected.frameworks.push("svelte");
+    if (deps["next"]) pushFramework(detected, "next", 'Found dependency "next".');
+    if (deps["convex"]) pushFramework(detected, "convex", 'Found dependency "convex".');
+    if (deps["vite"]) pushFramework(detected, "vite", 'Found dependency "vite".');
+    if (deps["remix"] || deps["@remix-run/node"])
+      pushFramework(detected, "remix", "Found Remix dependency.");
+    if (deps["nuxt"]) pushFramework(detected, "nuxt", 'Found dependency "nuxt".');
+    if (deps["astro"]) pushFramework(detected, "astro", 'Found dependency "astro".');
+    if (deps["svelte"] || deps["@sveltejs/kit"])
+      pushFramework(detected, "svelte", "Found Svelte dependency.");
 
     // Detect dev command
     const pm = detected.packageManager ?? "npm";
     const run = pm === "npm" ? "npm run" : pm;
-    if (pkg.scripts?.dev) detected.devCommand = `${run} dev`;
-    else if (pkg.scripts?.start) detected.devCommand = `${run} start`;
+    if (pkg.scripts?.dev) {
+      detected.devCommand = `${run} dev`;
+      detected.reasons.push(
+        `Using dev command "${detected.devCommand}" from package.json scripts.`,
+      );
+    } else if (pkg.scripts?.start) {
+      detected.devCommand = `${run} start`;
+      detected.reasons.push(
+        `Using start command "${detected.devCommand}" from package.json scripts.`,
+      );
+    }
   }
 
   // Python
   if (fileExists(dir, "pyproject.toml") || fileExists(dir, "requirements.txt")) {
     detected.language = detected.language ?? "python";
+    detected.reasons.push('Detected Python from "pyproject.toml" or "requirements.txt".');
     try {
       const pyproject = readFileSync(resolve(dir, "pyproject.toml"), "utf-8");
-      if (pyproject.includes("fastapi")) detected.frameworks.push("fastapi");
-      else if (pyproject.includes("django")) detected.frameworks.push("django");
-      else if (pyproject.includes("flask")) detected.frameworks.push("flask");
-    } catch {}
+      if (pyproject.includes("fastapi"))
+        pushFramework(detected, "fastapi", 'Found "fastapi" in pyproject.toml.');
+      else if (pyproject.includes("django"))
+        pushFramework(detected, "django", 'Found "django" in pyproject.toml.');
+      else if (pyproject.includes("flask"))
+        pushFramework(detected, "flask", 'Found "flask" in pyproject.toml.');
+    } catch {
+      // Ignore missing or unreadable pyproject metadata.
+    }
   }
 
   // Rust
   if (fileExists(dir, "Cargo.toml")) {
     detected.language = detected.language ?? "rust";
-    detected.frameworks.push("cargo");
+    detected.reasons.push('Detected Rust from "Cargo.toml".');
+    pushFramework(detected, "cargo", 'Using Cargo workflow from "Cargo.toml".');
   }
 
   // Go
   if (fileExists(dir, "go.mod")) {
     detected.language = detected.language ?? "go";
-    detected.frameworks.push("go");
+    detected.reasons.push('Detected Go from "go.mod".');
+    pushFramework(detected, "go", 'Using Go workflow from "go.mod".');
   }
 
   // Docker
   if (fileExists(dir, "docker-compose.yml") || fileExists(dir, "docker-compose.yaml")) {
-    detected.frameworks.push("docker");
+    pushFramework(
+      detected,
+      "docker",
+      'Detected Docker from "docker-compose.yml" or "docker-compose.yaml".',
+    );
+  }
+
+  if (detected.reasons.length === 0) {
+    detected.reasons.push("No framework-specific signals found; using the generic layout.");
   }
 
   return detected;
@@ -156,10 +194,15 @@ export async function detect(targetDir, { json, write } = {}) {
     if (json) {
       console.log(JSON.stringify({ detected, suggestedConfig: suggested, written: true }, null, 2));
     } else {
-      const desc = detected.frameworks.length > 0
-        ? detected.frameworks.join(" + ")
-        : detected.language ?? "generic project";
+      const desc =
+        detected.frameworks.length > 0
+          ? detected.frameworks.join(" + ")
+          : (detected.language ?? "generic project");
       console.log(`Detected ${desc}. Created ide.yml.`);
+      console.log("\nWhy this layout:");
+      for (const reason of detected.reasons) {
+        console.log(`  - ${reason}`);
+      }
     }
     return;
   }
@@ -174,5 +217,16 @@ export async function detect(targetDir, { json, write } = {}) {
   if (detected.language) console.log(`  Language: ${detected.language}`);
   if (detected.frameworks.length) console.log(`  Frameworks: ${detected.frameworks.join(", ")}`);
   if (detected.devCommand) console.log(`  Dev command: ${detected.devCommand}`);
+  console.log("\nReasoning:");
+  for (const reason of detected.reasons) {
+    console.log(`  - ${reason}`);
+  }
   console.log("\nRun with --write to create ide.yml, or --json to see the suggested config.");
+}
+
+function pushFramework(detected, framework, reason) {
+  if (!detected.frameworks.includes(framework)) {
+    detected.frameworks.push(framework);
+  }
+  detected.reasons.push(reason);
 }

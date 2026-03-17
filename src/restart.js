@@ -1,23 +1,16 @@
 import { resolve } from "node:path";
-import { execSync } from "node:child_process";
 import { getSessionName } from "./lib/yaml-io.js";
 import { launch } from "./launch.js";
+import { killSession } from "./lib/tmux.js";
 
-export async function restart(targetDir) {
+export async function restart(targetDir, { json, attach } = {}) {
   const dir = resolve(targetDir ?? ".");
   const session = getSessionName(dir);
+  const result = killSession(session);
 
-  let wasRunning = false;
-  try {
-    execSync(`tmux kill-session -t "${session}"`, { stdio: "ignore" });
-    wasRunning = true;
-  } catch {
-    // Session wasn't running — that's fine
-  }
-
-  if (wasRunning) {
+  if (result.stopped) {
     console.log(`Stopped session "${session}"`);
   }
 
-  await launch(dir);
+  await launch(dir, { json, attach });
 }

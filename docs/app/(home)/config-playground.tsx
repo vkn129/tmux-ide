@@ -188,11 +188,9 @@ rows:
 function parseConfig(text: string): IdeConfig | null {
   try {
     const parsed = yaml.load(text) as Record<string, unknown>;
-    if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.rows))
-      return null;
+    if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.rows)) return null;
     for (const row of parsed.rows) {
-      if (!row || typeof row !== "object" || !Array.isArray(row.panes))
-        return null;
+      if (!row || typeof row !== "object" || !Array.isArray(row.panes)) return null;
     }
     return parsed as unknown as IdeConfig;
   } catch {
@@ -228,9 +226,7 @@ function LayoutPreview({ config }: { config: IdeConfig }) {
           <div className="w-3 h-3 rounded-full bg-[#febc2e]" />
           <div className="w-3 h-3 rounded-full bg-[#28c840]" />
         </div>
-        <span className="text-xs text-neutral-400 font-mono ml-2">
-          tmux session
-        </span>
+        <span className="text-xs text-neutral-400 font-mono ml-2">tmux session</span>
       </div>
 
       {/* Pane grid */}
@@ -238,11 +234,7 @@ function LayoutPreview({ config }: { config: IdeConfig }) {
         {config.rows.map((row, ri) => {
           const paneSizes = computeSizes(row.panes);
           return (
-            <div
-              key={ri}
-              className="flex gap-px"
-              style={{ flex: `${rowSizes[ri]} 0 0%` }}
-            >
+            <div key={ri} className="flex gap-px" style={{ flex: `${rowSizes[ri]} 0 0%` }}>
               {row.panes.map((pane, pi) => (
                 <div
                   key={pi}
@@ -277,9 +269,7 @@ function LayoutPreview({ config }: { config: IdeConfig }) {
                     </span>
                   )}
                   {pane.focus && (
-                    <span className="text-[10px] text-green-500 mt-auto">
-                      ◉ focus
-                    </span>
+                    <span className="text-[10px] text-green-500 mt-auto">◉ focus</span>
                   )}
                 </div>
               ))}
@@ -301,9 +291,7 @@ function LayoutPreview({ config }: { config: IdeConfig }) {
 
 export function ConfigPlayground() {
   const [yamlText, setYamlText] = useState(templates[0].yaml);
-  const [config, setConfig] = useState<IdeConfig>(
-    () => parseConfig(templates[0].yaml)!
-  );
+  const [config, setConfig] = useState<IdeConfig>(() => parseConfig(templates[0].yaml)!);
   const [error, setError] = useState<string | null>(null);
   const [activeTemplate, setActiveTemplate] = useState<string>("default");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -320,7 +308,7 @@ export function ConfigPlayground() {
         setError("Invalid YAML");
       }
     },
-    [activeTemplate]
+    [activeTemplate],
   );
 
   const handleTemplateClick = useCallback((t: (typeof templates)[0]) => {
@@ -338,8 +326,7 @@ export function ConfigPlayground() {
         if (!ta) return;
         const start = ta.selectionStart;
         const end = ta.selectionEnd;
-        const newText =
-          yamlText.substring(0, start) + "  " + yamlText.substring(end);
+        const newText = yamlText.substring(0, start) + "  " + yamlText.substring(end);
         setYamlText(newText);
         // Update config from the new text
         const parsed = parseConfig(newText);
@@ -353,7 +340,7 @@ export function ConfigPlayground() {
         });
       }
     },
-    [yamlText]
+    [yamlText],
   );
 
   return (
@@ -380,12 +367,8 @@ export function ConfigPlayground() {
         {/* YAML editor */}
         <div className="rounded-lg border border-fd-border bg-fd-background overflow-hidden flex flex-col">
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-fd-border">
-            <span className="text-xs text-fd-muted-foreground font-mono">
-              ide.yml
-            </span>
-            {error && (
-              <span className="text-xs text-red-500 font-mono">{error}</span>
-            )}
+            <span className="text-xs text-fd-muted-foreground font-mono">ide.yml</span>
+            {error && <span className="text-xs text-red-500 font-mono">{error}</span>}
           </div>
           <textarea
             ref={textareaRef}

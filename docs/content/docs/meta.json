@@ -2,12 +2,14 @@
   "title": "Docs",
   "pages": [
     "index",
+    "release-1-1-0",
     "getting-started",
     "configuration",
     "commands",
     "programmatic",
     "templates",
     "agent-teams",
+    "contributing",
     "tips"
   ]
 }

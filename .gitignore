@@ -1,4 +1,25 @@
+# dependencies
 node_modules
-docs/.next
 docs/node_modules
+
+# docs build output
+docs/.next
+
+# turbo cache
+.turbo
+
+# local package artifacts
+*.tgz
+
+# local OS files
 .DS_Store
+
+# local tool settings
+.claude/
+ide.yml
+
+# local authoring context
+context/
+
+# local planning artifacts
+plans/

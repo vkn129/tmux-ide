@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security policy
+    url: https://github.com/wavyrai/tmux-ide/security/policy
+    about: Read the private security reporting policy before submitting a security-related report.
+  - name: Security issue
+    url: https://github.com/wavyrai/tmux-ide/security/advisories
+    about: Report security vulnerabilities privately through GitHub Security Advisories.

@@ -1,15 +1,21 @@
 # deps
 /node_modules
 
-# generated content
+# generated source files
 .source
+/.turbo
 
-# test & build
+# Next.js build output
 /coverage
 /.next/
 /out/
 /build
 *.tsbuildinfo
+
+# local environment and deployment files
+.env*.local
+.vercel
+next-env.d.ts
 
 # misc
 .DS_Store
@@ -19,8 +25,3 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-
-# others
-.env*.local
-.vercel
-next-env.d.ts

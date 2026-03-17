@@ -1,6 +1,6 @@
-@import 'tailwindcss';
-@import 'fumadocs-ui/css/neutral.css';
-@import 'fumadocs-ui/css/preset.css';
+@import "tailwindcss";
+@import "fumadocs-ui/css/neutral.css";
+@import "fumadocs-ui/css/preset.css";
 
 @theme {
   --font-sans: var(--font-geist-sans);
@@ -8,14 +8,15 @@
   --font-pixel: var(--font-geist-pixel-square);
 }
 
-@keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
-}
-
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes paneIn {
@@ -29,10 +30,6 @@
     opacity: 1;
     transform: scaleX(1);
   }
-}
-
-@utility animate-blink {
-  animation: blink 1s step-end infinite;
 }
 
 @utility animate-fade-in {

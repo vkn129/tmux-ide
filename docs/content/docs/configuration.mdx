@@ -67,9 +67,9 @@ An array of horizontal rows. Each row contains panes that are split side-by-side
 
 ```yaml
 rows:
-  - size: 70%    # this row gets 70% of screen height
+  - size: 70% # this row gets 70% of screen height
     panes: [...]
-  - panes: [...]  # remaining 30%
+  - panes: [...] # remaining 30%
 ```
 
 #### `rows[].size`
@@ -94,14 +94,14 @@ panes:
       NODE_ENV: development
 ```
 
-| Field | Required | Description |
-|-------|----------|-------------|
-| `title` | No | Label displayed in the pane border |
-| `command` | No | Shell command to execute when the pane opens. If omitted, you get an interactive shell. |
-| `size` | No | Width percentage within its row. If omitted, panes share equal width. |
-| `dir` | No | Working directory for this pane, relative to the project root. |
-| `focus` | No | Set to `true` to give this pane initial focus when the session starts. |
-| `env` | No | Key-value pairs of environment variables to set before running the command. |
+| Field     | Required | Description                                                                             |
+| --------- | -------- | --------------------------------------------------------------------------------------- |
+| `title`   | No       | Label displayed in the pane border                                                      |
+| `command` | No       | Shell command to execute when the pane opens. If omitted, you get an interactive shell. |
+| `size`    | No       | Width percentage within its row. If omitted, panes share equal width.                   |
+| `dir`     | No       | Working directory for this pane, relative to the project root.                          |
+| `focus`   | No       | Set to `true` to give this pane initial focus when the session starts.                  |
+| `env`     | No       | Key-value pairs of environment variables to set before running the command.             |
 
 ### `team`
 
@@ -112,22 +112,22 @@ team:
   name: my-team
 ```
 
-| Field | Required | Description |
-|-------|----------|-------------|
-| `team.name` | Yes | Team name for coordination storage |
-| `team.model` | No | Model override for teammates |
-| `team.permissions` | No | Default tool permissions for teammates |
+| Field              | Required | Description                                     |
+| ------------------ | -------- | ----------------------------------------------- |
+| `team.name`        | Yes      | Team name to reference in Claude prompts        |
+| `team.model`       | No       | Optional metadata for your own team conventions |
+| `team.permissions` | No       | Optional metadata for your own team conventions |
 
-When `team` is set, exactly one pane must have `role: lead`. See [Agent Teams](/docs/agent-teams) for full details.
+When `team` is set, tmux-ide enables `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` for the tmux session. See [Agent Teams](/docs/agent-teams) for the recommended lead/teammate pane pattern.
 
 ### Pane Team Fields
 
 When using agent teams, panes can have additional fields:
 
-| Field | Description |
-|-------|-------------|
-| `role` | `"lead"` or `"teammate"` — marks this pane as part of an agent team |
-| `task` | Initial task description for a teammate pane |
+| Field  | Description                                                          |
+| ------ | -------------------------------------------------------------------- |
+| `role` | `"lead"` or `"teammate"` metadata for pane labels and Claude prompts |
+| `task` | Suggested task description for a teammate pane                       |
 
 ```yaml
 panes:
@@ -146,10 +146,10 @@ Optional color overrides for the tmux styling.
 
 ```yaml
 theme:
-  accent: colour75     # Active pane border + status bar accent
-  border: colour238    # Inactive pane border
-  bg: colour235        # Status bar background
-  fg: colour248        # Status bar text
+  accent: colour75 # Active pane border + status bar accent
+  border: colour238 # Inactive pane border
+  bg: colour235 # Status bar background
+  fg: colour248 # Status bar text
 ```
 
 Colors use tmux color names: `colour0`–`colour255`, or standard names like `red`, `green`, `blue`.

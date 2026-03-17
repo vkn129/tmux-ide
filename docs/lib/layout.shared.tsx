@@ -1,9 +1,9 @@
-import type { BaseLayoutProps } from 'fumadocs-ui/layouts/shared';
+import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
 
 export const gitConfig = {
-  user: 'wavyrai',
-  repo: 'tmux-ide',
-  branch: 'main',
+  user: "wavyrai",
+  repo: "tmux-ide",
+  branch: "main",
 };
 
 export function baseOptions(): BaseLayoutProps {

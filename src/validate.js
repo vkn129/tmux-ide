@@ -94,22 +94,6 @@ export function validateConfig(config) {
     }
   }
 
-  // Cross-validate team roles
-  if (config.team && Array.isArray(config.rows)) {
-    let leadCount = 0;
-    for (const row of config.rows) {
-      if (!Array.isArray(row.panes)) continue;
-      for (const pane of row.panes) {
-        if (pane.role === "lead") leadCount++;
-      }
-    }
-    if (leadCount === 0) {
-      errors.push("team config requires exactly one pane with role: lead");
-    } else if (leadCount > 1) {
-      errors.push("team config allows only one pane with role: lead");
-    }
-  }
-
   if (config.theme !== undefined) {
     if (config.theme == null || typeof config.theme !== "object" || Array.isArray(config.theme)) {
       errors.push("'theme' must be an object");

@@ -16,7 +16,14 @@ describe("validateConfig", () => {
         {
           size: "70%",
           panes: [
-            { title: "Editor", command: "vim", dir: "src", size: "60%", focus: true, env: { PORT: 3000, HOST: "localhost" } },
+            {
+              title: "Editor",
+              command: "vim",
+              dir: "src",
+              size: "60%",
+              focus: true,
+              env: { PORT: 3000, HOST: "localhost" },
+            },
             { title: "Shell" },
           ],
         },
@@ -106,7 +113,7 @@ describe("validateConfig", () => {
 
   it("rejects size without % suffix", () => {
     const errors = validateConfig({ rows: [{ size: "70", panes: [{}] }] });
-    assert.ok(errors.some((e) => e.includes('must be a percentage')));
+    assert.ok(errors.some((e) => e.includes("must be a percentage")));
   });
 
   it("rejects 0% size", () => {
@@ -122,6 +129,34 @@ describe("validateConfig", () => {
   it("validates theme fields as strings", () => {
     const errors = validateConfig({ rows: [{ panes: [{}] }], theme: { accent: 123 } });
     assert.ok(errors.includes("theme.accent must be a string"));
+  });
+
+  it("accepts team metadata without requiring a lead pane", () => {
+    const errors = validateConfig({
+      team: { name: "my-team" },
+      rows: [
+        {
+          panes: [{ title: "Claude", command: "claude" }, { title: "Shell" }],
+        },
+      ],
+    });
+    assert.deepStrictEqual(errors, []);
+  });
+
+  it("validates team pane role and task field types when provided", () => {
+    const errors = validateConfig({
+      team: { name: "my-team" },
+      rows: [
+        {
+          panes: [
+            { command: "claude", role: "manager", task: false },
+            { command: "claude", role: "teammate", task: "Review changes" },
+          ],
+        },
+      ],
+    });
+    assert.ok(errors.includes('rows[0].panes[0].role must be "lead" or "teammate"'));
+    assert.ok(errors.includes("rows[0].panes[0].task must be a string"));
   });
 
   it("rejects non-object theme", () => {

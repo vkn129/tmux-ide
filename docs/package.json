@@ -1,13 +1,15 @@
 {
-  "name": "tmux-ide",
+  "name": "@tmux-ide/docs",
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "build": "next build",
-    "dev": "next dev",
+    "generate": "fumadocs-mdx",
+    "build": "pnpm run generate && next build",
+    "dev": "pnpm run generate && next dev",
+    "lint": "pnpm run typecheck",
     "start": "next start",
-    "types:check": "fumadocs-mdx && next typegen && tsc --noEmit",
-    "postinstall": "fumadocs-mdx"
+    "typecheck": "pnpm run generate && tsc --noEmit",
+    "types:check": "pnpm run typecheck"
   },
   "dependencies": {
     "@takumi-rs/image-response": "^0.70.4",

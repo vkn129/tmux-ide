@@ -5,20 +5,27 @@ import { ConfigPlayground } from "./config-playground";
 import { AgentTeamDemo } from "./agent-team-demo";
 
 export const metadata: Metadata = {
-  title: "tmux-ide — Run Claude agent teams in one terminal",
+  title: "tmux-ide — Prepare Claude agent-team layouts in one terminal",
   description:
-    "Orchestrate Claude Code agent teams in tmux. A team lead and multiple teammates, each in its own pane, coordinating through shared tasks. One YAML config, one command.",
+    "Prepare Claude Code agent-team-ready tmux layouts. One lead pane, multiple teammate panes, practical prompts, and the right environment setup in one YAML config.",
   openGraph: {
-    title: "tmux-ide — Run Claude agent teams in one terminal",
+    title: "tmux-ide — Prepare Claude agent-team layouts in one terminal",
     description:
-      "Orchestrate Claude Code agent teams in tmux. A team lead and multiple teammates, each in its own pane, coordinating through shared tasks.",
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "tmux-ide — Claude agent teams in tmux" }],
+      "Prepare Claude Code agent-team-ready tmux layouts with lead and teammate panes plus the right environment setup.",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "tmux-ide — Claude agent-team layouts in tmux",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "tmux-ide — Run Claude agent teams in one terminal",
+    title: "tmux-ide — Prepare Claude agent-team layouts in one terminal",
     description:
-      "Orchestrate Claude Code agent teams in tmux. A team lead and multiple teammates, each in its own pane, coordinating through shared tasks.",
+      "Prepare Claude Code agent-team-ready tmux layouts with lead and teammate panes plus the right environment setup.",
     images: ["/og-image.png"],
   },
   alternates: {
@@ -54,32 +61,21 @@ function InstallButton() {
       </CopyButton>
       <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-fd-muted-foreground">
         <span>
-          or{" "}
-          <code className="font-mono text-fd-foreground">npm i -g tmux-ide</code>
+          or <code className="font-mono text-fd-foreground">npm i -g tmux-ide</code>
         </span>
         <span>
-          or try instantly with{" "}
-          <code className="font-mono text-fd-foreground">npx tmux-ide</code>
+          or try instantly with <code className="font-mono text-fd-foreground">npx tmux-ide</code>
         </span>
       </div>
     </div>
   );
 }
 
-
-function Feature({
-  title,
-  description,
-}: {
-  title: string;
-  description: string;
-}) {
+function Feature({ title, description }: { title: string; description: string }) {
   return (
     <div className="text-center space-y-2">
       <h3 className="font-medium text-fd-foreground">{title}</h3>
-      <p className="text-sm text-fd-muted-foreground leading-relaxed">
-        {description}
-      </p>
+      <p className="text-sm text-fd-muted-foreground leading-relaxed">{description}</p>
     </div>
   );
 }
@@ -89,21 +85,28 @@ export default function HomePage() {
     <div className="flex flex-col items-center flex-1">
       {/* Hero */}
       <section className="flex flex-col items-center gap-8 px-6 pt-24 pb-16 max-w-3xl mx-auto text-center">
-        <span
-          aria-hidden="true"
-          className="font-pixel text-6xl sm:text-7xl md:text-8xl tracking-tight text-fd-foreground select-none"
-        >
-          tmux-ide
-        </span>
+        <div className="flex flex-col items-center gap-3">
+          <span
+            aria-hidden="true"
+            className="font-pixel text-6xl sm:text-7xl md:text-8xl tracking-tight text-fd-foreground select-none"
+          >
+            tmux-ide
+          </span>
+          <Link
+            href="/docs/release-1-1-0"
+            className="inline-flex items-center rounded-full border border-fd-border bg-fd-card px-3 py-1 text-[11px] font-mono font-medium uppercase tracking-[0.18em] text-fd-muted-foreground transition-colors hover:bg-fd-accent hover:text-fd-foreground"
+          >
+            New 1.1.0
+          </Link>
+        </div>
         <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-fd-foreground">
-          Run Claude agent teams
+          Prepare Claude agent-team layouts
           <br />
           <span className="text-fd-muted-foreground">in one terminal.</span>
         </h1>
         <p className="text-lg text-fd-muted-foreground max-w-xl leading-relaxed">
-          Orchestrate a team lead and multiple Claude teammates — each in its
-          own tmux pane, coordinating through shared tasks. One YAML config, one
-          command, a fully managed agent team.
+          Build a lead pane, teammate-ready Claude panes, and your dev tools in one tmux layout.
+          tmux-ide enables the right environment; Claude forms the team after you prompt it.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center gap-4">
@@ -133,10 +136,13 @@ export default function HomePage() {
         <InstallButton />
         <p className="text-xs text-fd-muted-foreground mt-2">
           The install script also registers the{" "}
-          <Link href="/docs/getting-started#claude-code-skill" className="underline hover:text-fd-foreground transition-colors">
+          <Link
+            href="/docs/getting-started#claude-code-skill"
+            className="underline hover:text-fd-foreground transition-colors"
+          >
             Claude Code skill
-          </Link>
-          {" "}— so Claude can configure your workspace automatically.
+          </Link>{" "}
+          — so Claude can configure your workspace automatically.
         </p>
       </section>
 
@@ -144,11 +150,11 @@ export default function HomePage() {
       <section className="w-full px-6 pb-24">
         <div className="text-center mb-10">
           <h2 className="text-2xl font-semibold text-fd-foreground">
-            The lead spawns teammates on the fly
+            Team-ready panes, then Claude takes over
           </h2>
           <p className="text-sm text-fd-muted-foreground mt-2 max-w-lg mx-auto">
-            Your team lead analyzes the project, decides it needs help, and spawns
-            a new agent — right into its own pane. Tasks are assigned, work happens in parallel.
+            tmux-ide prepares the panes and enables agent-team mode. From there, prompt the lead to
+            organize the team and assign work in natural language.
           </p>
         </div>
         <AgentTeamDemo />
@@ -165,9 +171,7 @@ export default function HomePage() {
       {/* Config Playground */}
       <section className="w-full px-6 pb-20">
         <div className="text-center mb-8">
-          <h2 className="text-2xl font-semibold text-fd-foreground">
-            Config in, layout out
-          </h2>
+          <h2 className="text-2xl font-semibold text-fd-foreground">Config in, layout out</h2>
           <p className="text-sm text-fd-muted-foreground mt-2">
             Edit the YAML and watch the layout update live. Try a preset to get started.
           </p>
@@ -188,7 +192,7 @@ export default function HomePage() {
           />
           <Feature
             title="Self-organizing"
-            description="The lead can spawn new teammates, reassign work, and restart the layout — all from within its own session."
+            description="Once the layout is running, the lead can recruit teammates, reassign work, and reshape the workflow through normal Claude prompting."
           />
           <Feature
             title="Declarative YAML"
@@ -200,7 +204,7 @@ export default function HomePage() {
           />
           <Feature
             title="One command"
-            description="tmux-ide handles tmux sessions, pane splitting, env vars, and agent flags. You just run tmux-ide."
+            description="tmux-ide handles tmux sessions, pane splitting, and the experimental env flag. You launch the layout, then tell Claude how to organize the team."
           />
           <Feature
             title="Claude Code skill built in"
@@ -213,9 +217,7 @@ export default function HomePage() {
       <section className="w-full max-w-2xl mx-auto px-6 pb-24">
         <div className="rounded-lg border border-fd-border bg-fd-background overflow-hidden">
           <div className="px-4 py-2.5 border-b border-fd-border">
-            <span className="text-xs text-fd-muted-foreground font-mono">
-              Quick start
-            </span>
+            <span className="text-xs text-fd-muted-foreground font-mono">Quick start</span>
           </div>
           <div className="p-4 font-mono text-sm space-y-1 text-fd-foreground/80">
             <p>
@@ -226,14 +228,14 @@ export default function HomePage() {
               <span className="text-fd-muted-foreground select-none">$ </span>
               tmux-ide init --template agent-team
             </p>
-            <p className="text-fd-muted-foreground">
-              → Created ide.yml with agent team layout.
-            </p>
+            <p className="text-fd-muted-foreground">→ Created ide.yml with agent team layout.</p>
             <p>
               <span className="text-fd-muted-foreground select-none">$ </span>
               tmux-ide
             </p>
-            <p className="text-fd-muted-foreground">→ Launching IDE session with 3 agents...</p>
+            <p className="text-fd-muted-foreground">
+              → Launching IDE session with lead and teammate-ready panes...
+            </p>
             <p>
               <span className="text-fd-muted-foreground select-none">$ </span>
               tmux-ide restart

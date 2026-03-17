@@ -88,19 +88,14 @@ export function AgentTeamDemo() {
   const [phase, setPhase] = useState(0);
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
-  const addLine = useCallback(
-    (paneId: string, line: string) => {
-      setRows((prev) =>
-        prev.map((row) => ({
-          ...row,
-          panes: row.panes.map((p) =>
-            p.id === paneId ? { ...p, lines: [...p.lines, line] } : p
-          ),
-        }))
-      );
-    },
-    []
-  );
+  const addLine = useCallback((paneId: string, line: string) => {
+    setRows((prev) =>
+      prev.map((row) => ({
+        ...row,
+        panes: row.panes.map((p) => (p.id === paneId ? { ...p, lines: [...p.lines, line] } : p)),
+      })),
+    );
+  }, []);
 
   const resetDemo = useCallback(() => {
     for (const t of timeoutsRef.current) clearTimeout(t);
@@ -118,13 +113,13 @@ export function AgentTeamDemo() {
             id: "lead",
             title: "Lead",
             role: "lead",
-            lines: ["$ claude --team my-app"],
+            lines: ['> "Start an agent team for my-app."'],
           },
           {
             id: "frontend",
             title: "Frontend",
             role: "teammate",
-            lines: ["$ claude --teammate-mode in-process"],
+            lines: ["… teammate pane ready"],
           },
         ],
       },
@@ -150,7 +145,7 @@ export function AgentTeamDemo() {
 
     // Lead decides to spawn
     schedule(2200, () => {
-      addLine("lead", "● Need an API specialist. Spawning teammate...");
+      addLine("lead", "● Need an API specialist. Adding a teammate pane...");
       setPhase(2);
     });
 
@@ -166,7 +161,7 @@ export function AgentTeamDemo() {
               id: "api",
               title: "API Agent",
               role: "teammate",
-              lines: ["$ claude --teammate-mode in-process"],
+              lines: ["… teammate pane ready"],
             },
           ],
         };
@@ -178,7 +173,7 @@ export function AgentTeamDemo() {
 
     // Team ready
     schedule(4000, () => {
-      addLine("lead", "✓ Team ready — 3 agents coordinating.");
+      addLine("lead", "✓ Team ready — 3 Claude panes coordinating.");
       setNewPaneId(null);
       setPhase(4);
     });
@@ -235,9 +230,7 @@ export function AgentTeamDemo() {
             <div className="w-2.5 h-2.5 rounded-full bg-[#febc2e]/80" />
             <div className="w-2.5 h-2.5 rounded-full bg-[#28c840]/80" />
           </div>
-          <span className="text-[11px] text-neutral-500 font-mono ml-2">
-            MY-APP IDE
-          </span>
+          <span className="text-[11px] text-neutral-500 font-mono ml-2">MY-APP IDE</span>
           <div className="ml-auto flex items-center gap-2">
             {phase >= 3 ? (
               <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/10 text-green-400/80 font-mono animate-fade-in">
@@ -254,11 +247,7 @@ export function AgentTeamDemo() {
         {/* Pane grid */}
         <div className="flex flex-col min-h-[340px]">
           {rows.map((row, ri) => (
-            <div
-              key={ri}
-              className="flex gap-px"
-              style={{ flex: `${row.size} 0 0%` }}
-            >
+            <div key={ri} className="flex gap-px" style={{ flex: `${row.size} 0 0%` }}>
               {row.panes.map((pane) => (
                 <DemoPaneView
                   key={pane.id}
@@ -273,11 +262,13 @@ export function AgentTeamDemo() {
 
         {/* Status bar */}
         <div className="flex items-center justify-between px-3 py-1.5 border-t border-white/10 text-[10px] font-mono bg-neutral-900/50">
-          <span className="text-amber-400/60">
-            MY-APP IDE
-          </span>
+          <span className="text-amber-400/60">MY-APP IDE</span>
           <span className="text-neutral-600">
-            {phase >= 3 ? "team: my-app (3 members)" : phase > 0 ? "team: my-app (2 members)" : "team: my-app"}
+            {phase >= 3
+              ? "team: my-app (3 members)"
+              : phase > 0
+                ? "team: my-app (2 members)"
+                : "team: my-app"}
           </span>
         </div>
       </div>

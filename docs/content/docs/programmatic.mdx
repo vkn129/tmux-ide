@@ -13,6 +13,7 @@ Add `--json` to any command for structured output:
 
 ```bash
 tmux-ide status --json
+tmux-ide inspect --json
 tmux-ide validate --json
 tmux-ide detect --json
 tmux-ide config --json
@@ -57,13 +58,17 @@ tmux-ide config add-row --size "30%"
 The recommended flow for setting up tmux-ide in a new project:
 
 1. **Detect the project stack:**
+
    ```bash
    tmux-ide detect --json
    ```
 
+   Use the returned `detected.reasons` array to explain the recommendation before writing config.
+
 2. **Present layout options with ASCII diagrams.** Before writing any config, show the user 2-3 layout options visually so they can pick or tweak:
 
    **Option A — Dual Claude + Dev**
+
    ```
    ┌─────────────────┬─────────────────┐
    │                 │                 │
@@ -75,6 +80,7 @@ The recommended flow for setting up tmux-ide in a new project:
    ```
 
    **Option B — Triple Claude**
+
    ```
    ┌───────────┬───────────┬───────────┐
    │           │           │           │
@@ -88,6 +94,7 @@ The recommended flow for setting up tmux-ide in a new project:
    Adapt pane names and commands to the detected stack (e.g., `pnpm dev`, `cargo watch`, `go run`).
 
 3. **Write the chosen config:**
+
    ```bash
    tmux-ide detect --write
    ```
@@ -124,7 +131,7 @@ Modify an existing config:
 
 ```bash
 # 1. Read current state
-tmux-ide config --json
+tmux-ide inspect --json
 
 # 2. Make changes
 tmux-ide config set rows.1.panes.0.command "bun dev"
@@ -160,6 +167,7 @@ The team lead can also reconfigure from within its session — see [Agent Teams]
 ## Best Practices
 
 - **Always use `--json`** for programmatic access — human output may change between versions
+- **Prefer `inspect --json`** when you need both config validity and runtime state
 - **Always validate after mutations** — `tmux-ide validate --json` catches errors before launch
 - **Top row ~70%** for Claude panes — gives editors enough space
 - **2-3 Claude panes** in the top row for parallel work (feature, review, explore)

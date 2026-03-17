@@ -1,0 +1,11 @@
+node_modules
+docs/.next
+docs/.source
+docs/node_modules
+coverage
+.next
+.turbo
+plans
+package-lock.json
+pnpm-lock.yaml
+docs/pnpm-lock.yaml

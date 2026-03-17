@@ -1,0 +1,11 @@
+{
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "outputs": [".next/**", "!.next/cache/**", ".source/**"]
+    },
+    "typecheck": {
+      "outputs": [".next/types/**", ".next/dev/types/**", ".source/**"]
+    }
+  }
+}
