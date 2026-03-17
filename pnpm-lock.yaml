@@ -9,7 +9,7 @@ importers:
   .:
     dependencies:
       js-yaml:
-        specifier: ^4.1.0
+        specifier: ^4.1.1
         version: 4.1.1
     devDependencies:
       '@eslint/js':
