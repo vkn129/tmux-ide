@@ -61,26 +61,33 @@ panes:
 
 ## Architecture
 
-- `bin/cli.js` — CLI entry point and top-level error boundary
-- `src/launch.js` — Launch orchestration for tmux sessions
-- `src/restart.js` — Stop + relaunch flow
-- `src/init.js` — Scaffolds ide.yml with smart detection
-- `src/stop.js` — Kills the tmux session
-- `src/attach.js` — Reattach to running session
-- `src/ls.js` — List tmux sessions
-- `src/doctor.js` — System health check
-- `src/status.js` — Session status query
-- `src/inspect.js` — Resolved config + live tmux inspection
-- `src/validate.js` — Config validation
-- `src/detect.js` — Project stack detection
-- `src/config.js` — Programmatic config mutations
-- `src/lib/tmux.js` — Shared tmux process helpers
-- `src/lib/launch-plan.js` — Pane startup planning + theme option generation
-- `src/lib/yaml-io.js` — Shared config read/write
-- `src/lib/dot-path.js` — Dot-notation get/set
-- `src/lib/output.js` — Structured CLI error/output helpers
-- `src/lib/sizes.js` — Row/pane sizing math
-- `src/*.test.js`, `src/lib/*.test.js` — CLI, unit, and integration coverage
+The project is written in TypeScript. Source lives in `src/`, compiled output in `dist/`. Tests run via Node's `--experimental-strip-types`; the published package ships compiled JS from `tsc`.
+
+- `bin/cli.js` — CLI entry point and top-level error boundary (stays JS, imports from `dist/`)
+- `tsconfig.json` — TypeScript config (strict, NodeNext, rewriteRelativeImportExtensions)
+- `src/types.ts` — Shared interfaces (IdeConfig, Row, Pane, ThemeConfig, PaneAction, SessionState)
+- `src/launch.ts` — Launch orchestration for tmux sessions
+- `src/restart.ts` — Stop + relaunch flow
+- `src/init.ts` — Scaffolds ide.yml with smart detection
+- `src/stop.ts` — Kills the tmux session
+- `src/attach.ts` — Reattach to running session
+- `src/ls.ts` — List tmux sessions
+- `src/doctor.ts` — System health check
+- `src/status.ts` — Session status query
+- `src/inspect.ts` — Resolved config + live tmux inspection
+- `src/validate.ts` — Config validation
+- `src/detect.ts` — Project stack detection
+- `src/config.ts` — Programmatic config mutations
+- `src/lib/tmux.ts` — Shared tmux process helpers
+- `src/lib/launch-plan.ts` — Pane startup planning + theme option generation
+- `src/lib/yaml-io.ts` — Shared config read/write
+- `src/lib/dot-path.ts` — Dot-notation get/set
+- `src/lib/output.ts` — Structured CLI error/output helpers
+- `src/lib/sizes.ts` — Row/pane sizing math
+- `src/lib/errors.ts` — Error class hierarchy (IdeError, ConfigError, TmuxError, SessionError)
+- `src/lib/session-options.ts` — Composable tmux session option builders
+- `src/lib/session-monitor.ts` — Agent/port status monitor (runs as detached process)
+- `src/*.test.ts`, `src/lib/*.test.ts` — CLI, unit, and integration coverage
 - `docs/content/docs/` — User-facing docs site content
 - `.github/workflows/ci.yml` — CI quality gates and release checks
 - `templates/` — Preset configs (default, nextjs, convex, vite, python, go, agent-team, agent-team-nextjs, agent-team-monorepo)
