@@ -23,6 +23,8 @@ Run these from the repository root:
 
 ```bash
 pnpm test
+pnpm typecheck
+pnpm build
 pnpm docs:build
 pnpm pack:check
 pnpm check
@@ -30,7 +32,9 @@ pnpm check
 
 What they do:
 
-- `pnpm test` runs the Node CLI test suite
+- `pnpm test` runs the Node CLI test suite (uses `--experimental-strip-types` on `.ts` files)
+- `pnpm typecheck` runs `tsc --noEmit` to verify types without emitting output
+- `pnpm build` compiles TypeScript to `dist/` via `tsc`
 - `pnpm docs:build` validates the docs site production build
 - `pnpm pack:check` verifies the published npm package can be packed cleanly
 - `pnpm check` runs the full default pre-push and pre-release check path
