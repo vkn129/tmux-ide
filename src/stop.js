@@ -1,7 +1,7 @@
 import { resolve } from "node:path";
-import { getSessionName } from "./lib/yaml-io.js";
-import { outputError } from "./lib/output.js";
-import { killSession, stopSessionMonitor } from "./lib/tmux.js";
+import { getSessionName } from "./lib/yaml-io.ts";
+import { outputError } from "./lib/output.ts";
+import { killSession, stopSessionMonitor } from "./lib/tmux.ts";
 
 export async function stop(targetDir, { json } = {}) {
   const dir = resolve(targetDir ?? ".");

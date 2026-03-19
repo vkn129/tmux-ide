@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { computeAgentStates, computePortPanes } from "./session-monitor.js";
+import { computeAgentStates, computePortPanes } from "./session-monitor.ts";
 
 describe("computeAgentStates", () => {
   it("returns null for non-agent panes", () => {

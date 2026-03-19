@@ -21,7 +21,7 @@ import {
   setSessionEnvironment,
   attachSession,
   runSessionCommand,
-} from "./tmux.js";
+} from "./tmux.ts";
 
 let mockExec;
 let restoreExec;

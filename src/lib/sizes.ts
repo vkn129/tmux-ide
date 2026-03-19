@@ -3,7 +3,7 @@
  * Items with `size` (e.g. "70%") keep their value; remaining space is split equally
  * among items without a size.
  */
-export function computeSizes(items) {
+export function computeSizes(items: { size?: string }[]): number[] {
   let claimed = 0;
   let unclaimed = 0;
   for (const item of items) {
@@ -25,11 +25,11 @@ export function computeSizes(items) {
  * Each tmux split divides the current pane. The percentage given to -p is
  * the portion allocated to the NEW (bottom/right) pane.
  */
-export function toSplitPercents(sizes) {
-  const percents = [];
+export function toSplitPercents(sizes: number[]): number[] {
+  const percents: number[] = [];
   for (let i = 1; i < sizes.length; i++) {
     const remaining = sizes.slice(i - 1).reduce((a, b) => a + b, 0);
-    const topShare = sizes[i - 1];
+    const topShare = sizes[i - 1]!;
     percents.push(Math.round(((remaining - topShare) / remaining) * 100));
   }
   return percents;

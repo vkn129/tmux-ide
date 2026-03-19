@@ -1,7 +1,7 @@
 import { resolve } from "node:path";
-import { readConfig, writeConfig } from "./lib/yaml-io.js";
-import { setByPath } from "./lib/dot-path.js";
-import { outputError } from "./lib/output.js";
+import { readConfig, writeConfig } from "./lib/yaml-io.ts";
+import { setByPath } from "./lib/dot-path.ts";
+import { outputError } from "./lib/output.ts";
 
 /**
  * Read config safely (read-only, no write). Returns config or undefined on error.

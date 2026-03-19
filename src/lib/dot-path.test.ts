@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { getByPath, setByPath } from "./dot-path.js";
+import { getByPath, setByPath } from "./dot-path.ts";
 
 describe("getByPath", () => {
   it("gets a top-level key", () => {

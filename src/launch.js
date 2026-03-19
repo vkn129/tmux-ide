@@ -2,11 +2,11 @@ import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { readConfig, getSessionName } from "./lib/yaml-io.js";
-import { computeSizes, toSplitPercents } from "./lib/sizes.js";
-import { outputError } from "./lib/output.js";
-import { collectPaneStartupPlan } from "./lib/launch-plan.js";
-import { buildSessionOptions } from "./lib/session-options.js";
+import { readConfig, getSessionName } from "./lib/yaml-io.ts";
+import { computeSizes, toSplitPercents } from "./lib/sizes.ts";
+import { outputError } from "./lib/output.ts";
+import { collectPaneStartupPlan } from "./lib/launch-plan.ts";
+import { buildSessionOptions } from "./lib/session-options.ts";
 import {
   attachSession,
   createDetachedSession,
@@ -21,7 +21,7 @@ import {
   setSessionVariable,
   splitPane,
   startSessionMonitor,
-} from "./lib/tmux.js";
+} from "./lib/tmux.ts";
 import { validateConfig } from "./validate.js";
 
 function sleepMs(ms) {
@@ -225,7 +225,7 @@ export async function launch(targetDir, { json = false, attach = true } = {}) {
   const monitorScript = resolve(
     dirname(fileURLToPath(import.meta.url)),
     "lib",
-    "session-monitor.js",
+    "session-monitor.ts",
   );
   startSessionMonitor(session, monitorScript);
 

@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { computeSizes, toSplitPercents } from "./sizes.js";
+import { computeSizes, toSplitPercents } from "./sizes.ts";
 
 describe("computeSizes", () => {
   it("distributes remaining space to items without size", () => {

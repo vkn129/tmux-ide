@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { buildPaneCommand, collectPaneStartupPlan } from "./launch-plan.js";
+import { buildPaneCommand, collectPaneStartupPlan } from "./launch-plan.ts";
 
 describe("buildPaneCommand", () => {
   it("passes through normal pane commands", () => {

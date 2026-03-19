@@ -3,8 +3,8 @@ import assert from "node:assert/strict";
 import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { _setExecutor } from "./lib/tmux.js";
-import { IdeError } from "./lib/errors.js";
+import { _setExecutor } from "./lib/tmux.ts";
+import { IdeError } from "./lib/errors.ts";
 import { stop } from "./stop.js";
 
 let mockExec;

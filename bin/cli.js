@@ -13,8 +13,8 @@ import { validate } from "../src/validate.js";
 import { detect } from "../src/detect.js";
 import { config } from "../src/config.js";
 import { restart } from "../src/restart.js";
-import { IdeError } from "../src/lib/errors.js";
-import { printCommandError } from "../src/lib/output.js";
+import { IdeError } from "../src/lib/errors.ts";
+import { printCommandError } from "../src/lib/output.ts";
 
 const { positionals, values } = parseArgs({
   allowPositionals: true,

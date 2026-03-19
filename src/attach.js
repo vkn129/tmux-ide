@@ -1,7 +1,7 @@
 import { resolve } from "node:path";
-import { getSessionName } from "./lib/yaml-io.js";
-import { outputError } from "./lib/output.js";
-import { attachSession, getSessionState } from "./lib/tmux.js";
+import { getSessionName } from "./lib/yaml-io.ts";
+import { outputError } from "./lib/output.ts";
+import { attachSession, getSessionState } from "./lib/tmux.ts";
 
 export async function attach(targetDir, { json: _json } = {}) {
   const dir = resolve(targetDir ?? ".");

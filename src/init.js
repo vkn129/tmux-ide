@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 import { detectStack, suggestConfig } from "./detect.js";
-import { outputError, printLayout } from "./lib/output.js";
+import { outputError, printLayout } from "./lib/output.ts";
 
 export async function init({ template, json } = {}) {
   const dir = process.cwd();

@@ -1,8 +1,8 @@
 import { resolve, basename } from "node:path";
-import { readConfig } from "./lib/yaml-io.js";
+import { readConfig } from "./lib/yaml-io.ts";
 import { validateConfig } from "./validate.js";
-import { outputError } from "./lib/output.js";
-import { getSessionState, listPanes } from "./lib/tmux.js";
+import { outputError } from "./lib/output.ts";
+import { getSessionState, listPanes } from "./lib/tmux.ts";
 
 export function buildInspection(dir, { config, configPath, running, panes }) {
   const errors = validateConfig(config);

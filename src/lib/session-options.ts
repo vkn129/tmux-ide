@@ -3,7 +3,12 @@
  * Each returns an array of tmux command arrays.
  */
 
-export function buildSessionOptions(session, { theme = {} } = {}) {
+import type { ThemeConfig, TmuxCommand } from "../types.ts";
+
+export function buildSessionOptions(
+  session: string,
+  { theme = {} }: { theme?: ThemeConfig } = {},
+): TmuxCommand[] {
   return [
     ...themeOptions(session, theme),
     ...borderOptions(session, theme),
@@ -13,7 +18,7 @@ export function buildSessionOptions(session, { theme = {} } = {}) {
   ];
 }
 
-export function themeOptions(session, theme) {
+export function themeOptions(session: string, theme: ThemeConfig): TmuxCommand[] {
   const accent = theme.accent ?? "colour75";
   const border = theme.border ?? "colour238";
   const bg = theme.bg ?? "colour235";
@@ -26,7 +31,7 @@ export function themeOptions(session, theme) {
   ];
 }
 
-export function borderOptions(session, theme) {
+export function borderOptions(session: string, theme: ThemeConfig): TmuxCommand[] {
   const accent = theme.accent ?? "colour75";
   const border = theme.border ?? "colour238";
   const fg = theme.fg ?? "colour248";
@@ -43,7 +48,7 @@ export function borderOptions(session, theme) {
   ];
 }
 
-export function behaviorOptions(session) {
+export function behaviorOptions(session: string): TmuxCommand[] {
   return [
     ["set-option", "-t", session, "mouse", "on"],
     ["set-option", "-t", session, "escape-time", "0"],
@@ -51,7 +56,7 @@ export function behaviorOptions(session) {
   ];
 }
 
-export function statusBarOptions(session, theme) {
+export function statusBarOptions(session: string, theme: ThemeConfig): TmuxCommand[] {
   const accent = theme.accent ?? "colour75";
   const border = theme.border ?? "colour238";
   const fg = theme.fg ?? "colour248";
@@ -90,6 +95,6 @@ export function statusBarOptions(session, theme) {
   ];
 }
 
-export function keyBindings() {
+export function keyBindings(): TmuxCommand[] {
   return [["bind-key", "-n", "MouseDown1StatusDefault", "select-pane", "-t", "="]];
 }

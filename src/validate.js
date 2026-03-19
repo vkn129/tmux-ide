@@ -1,6 +1,6 @@
 import { resolve } from "node:path";
-import { readConfig } from "./lib/yaml-io.js";
-import { outputError } from "./lib/output.js";
+import { readConfig } from "./lib/yaml-io.ts";
+import { outputError } from "./lib/output.ts";
 
 export function validateConfig(config) {
   const errors = [];

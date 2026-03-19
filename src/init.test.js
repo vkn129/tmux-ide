@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtempSync, writeFileSync, readFileSync, existsSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { IdeError } from "./lib/errors.js";
+import { IdeError } from "./lib/errors.ts";
 import { init } from "./init.js";
 
 let tmpDir;

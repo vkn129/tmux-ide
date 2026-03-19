@@ -5,69 +5,79 @@ import { resolve } from "node:path";
 const INTERVAL = 1000;
 const SPINNERS = /^[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏⠂⠒⠢⠆⠐⠠⠄◐◓◑◒|/\\-] /;
 
+interface MonitorPane {
+  id: string;
+  pid: string;
+  cmd?: string;
+  title?: string;
+}
+
 // --- Port detection (pure helpers) ---
 
-function getListeningPids() {
+function getListeningPids(): Set<string> {
   // Returns Set of PIDs that have a listening TCP port in range 1024-20000
   try {
     const raw = execFileSync("lsof", ["-nP", "-iTCP", "-sTCP:LISTEN", "-FpPn"], {
       encoding: "utf-8",
       stdio: ["ignore", "pipe", "ignore"],
     });
-    const pids = new Set();
-    let currentPid = null;
+    const pids = new Set<string>();
+    let currentPid: string | null = null;
     for (const line of raw.split("\n")) {
       if (line.startsWith("p")) {
         currentPid = line.slice(1);
       } else if (line.startsWith("n") && currentPid) {
         const match = line.match(/:(\d+)$/);
         if (match) {
-          const port = parseInt(match[1], 10);
+          const port = parseInt(match[1]!, 10);
           if (port >= 1024 && port <= 20000) pids.add(currentPid);
         }
       }
     }
     return pids;
   } catch {
-    return new Set();
+    return new Set<string>();
   }
 }
 
-function getProcessTree() {
+function getProcessTree(): Map<string, string> {
   // Returns Map<pid, ppid>
   try {
     const raw = execFileSync("ps", ["-axo", "pid=,ppid="], {
       encoding: "utf-8",
       stdio: ["ignore", "pipe", "ignore"],
     });
-    const tree = new Map();
+    const tree = new Map<string, string>();
     for (const line of raw.trim().split("\n")) {
       const parts = line.trim().split(/\s+/);
-      if (parts.length === 2) tree.set(parts[0], parts[1]);
+      if (parts.length === 2) tree.set(parts[0]!, parts[1]!);
     }
     return tree;
   } catch {
-    return new Map();
+    return new Map<string, string>();
   }
 }
 
-export function computePortPanes(panes, { listeners, tree } = {}) {
+export function computePortPanes(
+  panes: MonitorPane[],
+  { listeners, tree }: { listeners?: Set<string>; tree?: Map<string, string> } = {},
+): Set<string> {
   // Walk up from each listening PID to find which pane owns it
-  if (!listeners) listeners = getListeningPids();
-  if (!tree) tree = getProcessTree();
-  if (listeners.size === 0) return new Set();
+  const resolvedListeners = listeners ?? getListeningPids();
+  const resolvedTree = tree ?? getProcessTree();
+  if (resolvedListeners.size === 0) return new Set<string>();
 
   const panePids = new Map(panes.map((p) => [p.pid, p.id]));
-  const result = new Set();
+  const result = new Set<string>();
 
-  for (const listenerPid of listeners) {
-    let pid = listenerPid;
+  for (const listenerPid of resolvedListeners) {
+    let pid: string | undefined = listenerPid;
     while (pid && pid !== "0") {
       if (panePids.has(pid)) {
-        result.add(panePids.get(pid));
+        result.add(panePids.get(pid)!);
         break;
       }
-      pid = tree.get(pid);
+      pid = resolvedTree.get(pid);
     }
   }
   return result;
@@ -75,9 +85,9 @@ export function computePortPanes(panes, { listeners, tree } = {}) {
 
 // --- Agent detection ---
 
-export function computeAgentStates(panes) {
+export function computeAgentStates(panes: MonitorPane[]): Map<string, "busy" | "idle" | null> {
   // Returns Map<paneId, "busy" | "idle" | null>
-  const states = new Map();
+  const states = new Map<string, "busy" | "idle" | null>();
   for (const pane of panes) {
     const cmd = (pane.cmd ?? "").toLowerCase();
     if (!cmd.includes("claude") && !cmd.includes("codex")) {
@@ -94,14 +104,14 @@ export function computeAgentStates(panes) {
 const isMainModule = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 
 if (isMainModule) {
-  const session = process.argv[2];
+  const session: string = process.argv[2]!;
   if (!session) process.exit(1);
 
-  function tmux(...args) {
+  function tmux(...args: string[]): string {
     return execFileSync("tmux", args, { encoding: "utf-8" }).trim();
   }
 
-  function tmuxSilent(...args) {
+  function tmuxSilent(...args: string[]): string {
     try {
       return tmux(...args);
     } catch {
@@ -109,7 +119,7 @@ if (isMainModule) {
     }
   }
 
-  function sessionExists() {
+  function sessionExists(): boolean {
     try {
       tmux("has-session", "-t", session);
       return true;
@@ -118,11 +128,11 @@ if (isMainModule) {
     }
   }
 
-  function hasClients() {
+  function hasClients(): boolean {
     return tmuxSilent("list-clients").length > 0;
   }
 
-  function listPanes() {
+  function listPanes(): MonitorPane[] {
     const raw = tmuxSilent(
       "list-panes",
       "-t",
@@ -133,13 +143,13 @@ if (isMainModule) {
     if (!raw) return [];
     return raw.split("\n").map((line) => {
       const [id, pid, cmd, title] = line.split("\t");
-      return { id, pid, cmd, title };
+      return { id: id!, pid: pid!, cmd, title };
     });
   }
 
   let lastState = "";
 
-  function tick() {
+  function tick(): void {
     if (!sessionExists()) process.exit(0);
     if (!hasClients()) return; // skip when nobody is watching
 

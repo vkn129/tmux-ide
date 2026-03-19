@@ -1,6 +1,6 @@
 import { resolve, basename } from "node:path";
 import { readFileSync, existsSync } from "node:fs";
-import { writeConfig } from "./lib/yaml-io.js";
+import { writeConfig } from "./lib/yaml-io.ts";
 
 function fileExists(dir, name) {
   return existsSync(resolve(dir, name));

@@ -1,7 +1,7 @@
 import { resolve } from "node:path";
-import { getSessionName } from "./lib/yaml-io.js";
+import { getSessionName } from "./lib/yaml-io.ts";
 import { launch } from "./launch.js";
-import { killSession } from "./lib/tmux.js";
+import { killSession } from "./lib/tmux.ts";
 
 export async function restart(targetDir, { json, attach } = {}) {
   const dir = resolve(targetDir ?? ".");

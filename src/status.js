@@ -1,7 +1,7 @@
 import { resolve } from "node:path";
 import { existsSync } from "node:fs";
-import { getSessionName } from "./lib/yaml-io.js";
-import { getSessionState, listPanes } from "./lib/tmux.js";
+import { getSessionName } from "./lib/yaml-io.ts";
+import { getSessionState, listPanes } from "./lib/tmux.ts";
 
 export async function status(targetDir, { json } = {}) {
   const dir = resolve(targetDir ?? ".");

@@ -7,7 +7,7 @@ import {
   behaviorOptions,
   statusBarOptions,
   keyBindings,
-} from "./session-options.js";
+} from "./session-options.ts";
 
 describe("buildSessionOptions", () => {
   it("returns an array of command arrays", () => {
