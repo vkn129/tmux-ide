@@ -201,10 +201,7 @@ describe("validateConfig", () => {
 
   it("accepts single focus: true per row", () => {
     const errors = validateConfig({
-      rows: [
-        { panes: [{ focus: true }, {}] },
-        { panes: [{}, { focus: true }] },
-      ],
+      rows: [{ panes: [{ focus: true }, {}] }, { panes: [{}, { focus: true }] }],
     });
     assert.deepStrictEqual(errors, []);
   });

@@ -58,7 +58,7 @@ describe("getSessionState", () => {
     ]);
   });
 
-  it("returns SESSION_NOT_FOUND for \"can't find session\"", () => {
+  it('returns SESSION_NOT_FOUND for "can\'t find session"', () => {
     mockExec.mock.mockImplementation(() => {
       throw makeExecError("can't find session: my-session");
     });
@@ -66,7 +66,7 @@ describe("getSessionState", () => {
     assert.deepStrictEqual(result, { running: false, reason: "SESSION_NOT_FOUND" });
   });
 
-  it("returns TMUX_UNAVAILABLE for \"connection refused\"", () => {
+  it('returns TMUX_UNAVAILABLE for "connection refused"', () => {
     mockExec.mock.mockImplementation(() => {
       throw makeExecError("error connecting to /tmp/tmux-1000/default (connection refused)");
     });
@@ -74,7 +74,7 @@ describe("getSessionState", () => {
     assert.deepStrictEqual(result, { running: false, reason: "TMUX_UNAVAILABLE" });
   });
 
-  it("returns TMUX_UNAVAILABLE for \"no server running\"", () => {
+  it('returns TMUX_UNAVAILABLE for "no server running"', () => {
     mockExec.mock.mockImplementation(() => {
       throw makeExecError("no server running on /tmp/tmux-1000/default");
     });
@@ -129,11 +129,7 @@ describe("killSession", () => {
     mockExec.mock.mockImplementation(() => "");
     const result = killSession("proj");
     assert.deepStrictEqual(result, { stopped: true, reason: null });
-    assert.deepStrictEqual(mockExec.mock.calls[0].arguments[1], [
-      "kill-session",
-      "-t",
-      "proj",
-    ]);
+    assert.deepStrictEqual(mockExec.mock.calls[0].arguments[1], ["kill-session", "-t", "proj"]);
   });
 
   it("returns stopped: false for missing session", () => {
@@ -167,9 +163,7 @@ describe("killSession", () => {
 
 describe("listPanes", () => {
   it("parses multi-pane output correctly", () => {
-    mockExec.mock.mockImplementation(() =>
-      "0|Editor|120|40|1\n1|Shell|80|40|0\n",
-    );
+    mockExec.mock.mockImplementation(() => "0|Editor|120|40|1\n1|Shell|80|40|0\n");
     const panes = listPanes("proj");
     assert.deepStrictEqual(panes, [
       { index: 0, title: "Editor", width: 120, height: 40, active: true },
@@ -186,9 +180,7 @@ describe("listPanes", () => {
   it("handles pane titles containing pipe characters", () => {
     // The split("|") will split on the first pipe in the title, causing misparse.
     // This documents the current behavior — titles with pipes are truncated.
-    mockExec.mock.mockImplementation(() =>
-      "0|A|B|120|40|0\n",
-    );
+    mockExec.mock.mockImplementation(() => "0|A|B|120|40|0\n");
     const panes = listPanes("proj");
     // With pipe in title, index=0, title="A", width=NaN (from "B"), ...
     assert.strictEqual(panes[0].index, 0);
@@ -325,13 +317,7 @@ describe("startSessionMonitor", () => {
 
     // Check PID was stored via set-option
     const setArgs = mockExec.mock.calls[0].arguments[1];
-    assert.deepStrictEqual(setArgs, [
-      "set-option",
-      "-t",
-      "proj",
-      "@monitor_pid",
-      "12345",
-    ]);
+    assert.deepStrictEqual(setArgs, ["set-option", "-t", "proj", "@monitor_pid", "12345"]);
 
     restoreSpawn();
   });
@@ -386,11 +372,7 @@ describe("selectPane", () => {
   it("calls select-pane with target", () => {
     mockExec.mock.mockImplementation(() => "");
     selectPane("%2");
-    assert.deepStrictEqual(mockExec.mock.calls[0].arguments[1], [
-      "select-pane",
-      "-t",
-      "%2",
-    ]);
+    assert.deepStrictEqual(mockExec.mock.calls[0].arguments[1], ["select-pane", "-t", "%2"]);
   });
 });
 
@@ -419,11 +401,7 @@ describe("attachSession", () => {
   it("calls attach with correct args and stdio inherit", () => {
     mockExec.mock.mockImplementation(() => "");
     attachSession("proj");
-    assert.deepStrictEqual(mockExec.mock.calls[0].arguments[1], [
-      "attach",
-      "-t",
-      "proj",
-    ]);
+    assert.deepStrictEqual(mockExec.mock.calls[0].arguments[1], ["attach", "-t", "proj"]);
     assert.strictEqual(mockExec.mock.calls[0].arguments[2].stdio, "inherit");
   });
 });
@@ -486,7 +464,7 @@ describe("debug logging", () => {
 // --- Error classification edge cases ---
 
 describe("error classification", () => {
-  it("classifies \"can't find window\" as SESSION_NOT_FOUND", () => {
+  it('classifies "can\'t find window" as SESSION_NOT_FOUND', () => {
     mockExec.mock.mockImplementation(() => {
       throw makeExecError("can't find window: proj:0");
     });
@@ -494,7 +472,7 @@ describe("error classification", () => {
     assert.deepStrictEqual(result, { running: false, reason: "SESSION_NOT_FOUND" });
   });
 
-  it("classifies \"unknown target\" as SESSION_NOT_FOUND", () => {
+  it('classifies "unknown target" as SESSION_NOT_FOUND', () => {
     mockExec.mock.mockImplementation(() => {
       throw makeExecError("unknown target: proj");
     });
@@ -502,7 +480,7 @@ describe("error classification", () => {
     assert.deepStrictEqual(result, { running: false, reason: "SESSION_NOT_FOUND" });
   });
 
-  it("classifies \"failed to connect to server\" as TMUX_UNAVAILABLE", () => {
+  it('classifies "failed to connect to server" as TMUX_UNAVAILABLE', () => {
     mockExec.mock.mockImplementation(() => {
       throw makeExecError("failed to connect to server: /tmp/tmux-1000/default");
     });
@@ -510,7 +488,7 @@ describe("error classification", () => {
     assert.deepStrictEqual(result, { running: false, reason: "TMUX_UNAVAILABLE" });
   });
 
-  it("classifies \"error connecting to\" as TMUX_UNAVAILABLE", () => {
+  it('classifies "error connecting to" as TMUX_UNAVAILABLE', () => {
     mockExec.mock.mockImplementation(() => {
       throw makeExecError("error connecting to /tmp/tmux-1000/default");
     });

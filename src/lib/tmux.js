@@ -203,14 +203,18 @@ let _spawner = spawn;
 export function _setExecutor(fn) {
   const prev = _executor;
   _executor = fn;
-  return () => { _executor = prev; };
+  return () => {
+    _executor = prev;
+  };
 }
 
 /** @internal Replace the spawner for testing. Returns a restore function. */
 export function _setSpawner(fn) {
   const prev = _spawner;
   _spawner = fn;
-  return () => { _spawner = prev; };
+  return () => {
+    _spawner = prev;
+  };
 }
 
 function runTmux(args, options = {}) {
