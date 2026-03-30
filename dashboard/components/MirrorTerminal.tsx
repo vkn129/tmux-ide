@@ -2,15 +2,43 @@
 
 import { useEffect, useRef, useState } from "react";
 import { init, Terminal, FitAddon } from "ghostty-web";
+import {
+  decodeFrame,
+  encodeHelloAuthFrame,
+  encodeInputTextFrame,
+  encodeSubscribeStdoutFrame,
+  paneSessionKey,
+  WsV3MessageType,
+} from "@/lib/ws-v3-client";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5050";
 
-// Initialize WASM once at module level
 const wasmReady = init();
 
-function getMirrorWsUrl(sessionName: string, paneId: string): string {
-  const base = API_BASE.replace(/^http/, "ws");
-  return `${base}/ws/mirror/${encodeURIComponent(sessionName)}/${paneId}`;
+function wsBaseFromApi(): string {
+  return API_BASE.replace(/^http/, "ws");
+}
+
+function getV3WsUrl(sessionName: string, paneId: string): string {
+  return `${wsBaseFromApi()}/ws/v3/${encodeURIComponent(sessionName)}/${paneId}`;
+}
+
+function getMirrorV1WsUrl(sessionName: string, paneId: string, token?: string): string {
+  let url = `${wsBaseFromApi()}/ws/mirror/${encodeURIComponent(sessionName)}/${paneId}`;
+  if (token) {
+    url += `?token=${encodeURIComponent(token)}`;
+  }
+  return url;
+}
+
+function getWsAuthToken(explicit?: string): string | undefined {
+  if (explicit) return explicit;
+  if (typeof window !== "undefined") {
+    const fromStorage = window.localStorage.getItem("tmux-ide-ws-token");
+    if (fromStorage) return fromStorage;
+  }
+  const env = process.env.NEXT_PUBLIC_WS_TOKEN;
+  return env || undefined;
 }
 
 type ConnectionState = "connecting" | "connected" | "error";
@@ -20,11 +48,20 @@ interface MirrorTerminalProps {
   paneId: string;
   paneName: string;
   className?: string;
+  /** Optional JWT for HELLO (v3) and v1 `?token=` when auth is enabled on the command center. */
+  authToken?: string;
 }
 
-export function MirrorTerminal({ sessionName, paneId, paneName, className }: MirrorTerminalProps) {
+export function MirrorTerminal({
+  sessionName,
+  paneId,
+  paneName,
+  className,
+  authToken: authTokenProp,
+}: MirrorTerminalProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [connState, setConnState] = useState<ConnectionState>("connecting");
+  const useV3Ref = useRef(false);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -34,6 +71,150 @@ export function MirrorTerminal({ sessionName, paneId, paneName, className }: Mir
     let term: Terminal | null = null;
     let ws: WebSocket | null = null;
     let fitAddon: FitAddon | null = null;
+    let fallbackTimer: ReturnType<typeof setTimeout> | null = null;
+    let v1FallbackStarted = false;
+
+    const token = getWsAuthToken(authTokenProp);
+
+    function cleanupTimers() {
+      if (fallbackTimer !== null) {
+        clearTimeout(fallbackTimer);
+        fallbackTimer = null;
+      }
+    }
+
+    function connectV1() {
+      if (v1FallbackStarted || cancelled || !term) return;
+      v1FallbackStarted = true;
+      useV3Ref.current = false;
+      cleanupTimers();
+
+      try {
+        ws?.close();
+      } catch {
+        /* ignore */
+      }
+      ws = null;
+
+      const v1 = new WebSocket(getMirrorV1WsUrl(sessionName, paneId, token));
+
+      v1.onopen = () => {
+        if (cancelled) {
+          v1.close();
+          return;
+        }
+        ws = v1;
+        setConnState("connected");
+      };
+
+      v1.onmessage = (event) => {
+        const data = event.data;
+        if (typeof data === "string" && data.startsWith("{")) {
+          try {
+            const msg = JSON.parse(data) as { type?: string; cols?: number; rows?: number };
+            if (msg.type === "dimensions" && msg.cols && msg.rows) {
+              term!.resize(msg.cols, msg.rows);
+              return;
+            }
+          } catch {
+            /* not JSON */
+          }
+        }
+        term!.write(data);
+      };
+
+      v1.onclose = () => {
+        if (cancelled) return;
+        setConnState("error");
+      };
+
+      v1.onerror = () => {
+        if (cancelled) return;
+        setConnState("error");
+      };
+    }
+
+    function tryConnectV3() {
+      if (cancelled || !term) return;
+
+      const v3 = new WebSocket(getV3WsUrl(sessionName, paneId));
+      v3.binaryType = "arraybuffer";
+
+      v3.onclose = () => {
+        if (cancelled || v1FallbackStarted) return;
+        if (useV3Ref.current && ws === v3) setConnState("error");
+      };
+
+      let handshake = true;
+      let opened = false;
+
+      fallbackTimer = setTimeout(() => {
+        if (cancelled || opened) return;
+        try {
+          v3.close();
+        } catch {
+          /* ignore */
+        }
+        connectV1();
+      }, 8000);
+
+      v3.onopen = () => {
+        if (cancelled) {
+          v3.close();
+          return;
+        }
+        opened = true;
+        cleanupTimers();
+
+        v3.onmessage = (event) => {
+          if (cancelled || !term) return;
+          const raw = event.data;
+          const buf =
+            raw instanceof ArrayBuffer
+              ? new Uint8Array(raw)
+              : new Uint8Array(raw as ArrayBuffer);
+          const frame = decodeFrame(buf);
+          if (!frame) return;
+
+          if (handshake) {
+            if (frame.type === WsV3MessageType.ERROR) {
+              handshake = false;
+              try {
+                v3.close();
+              } catch {
+                /* ignore */
+              }
+              connectV1();
+              return;
+            }
+            if (frame.type === WsV3MessageType.WELCOME) {
+              handshake = false;
+              return;
+            }
+          }
+
+          if (frame.type === WsV3MessageType.STDOUT || frame.type === WsV3MessageType.SNAPSHOT_VT) {
+            term.write(new TextDecoder().decode(frame.payload));
+          }
+        };
+
+        v3.send(encodeHelloAuthFrame(token));
+        window.setTimeout(() => {
+          if (cancelled || v3.readyState !== WebSocket.OPEN) return;
+          v3.send(encodeSubscribeStdoutFrame(paneSessionKey(sessionName, paneId)));
+        }, 25);
+
+        ws = v3;
+        useV3Ref.current = true;
+        setConnState("connected");
+      };
+
+      v3.onerror = () => {
+        if (cancelled || opened) return;
+        cleanupTimers();
+        connectV1();
+      };
+    }
 
     async function setup() {
       await wasmReady;
@@ -70,65 +251,29 @@ export function MirrorTerminal({ sessionName, paneId, paneName, className }: Mir
       }
 
       fitAddon.fit();
-      // Don't call fitAddon.observeResize() — we match the tmux pane size,
-      // not the browser container size. Resizing from the browser would shrink
-      // the tmux pane for all clients (tmux uses smallest client size).
 
-      // Forward keyboard input to WebSocket
       term.onData((data: string) => {
-        if (ws && ws.readyState === WebSocket.OPEN) {
+        if (!ws || ws.readyState !== WebSocket.OPEN) return;
+        if (useV3Ref.current) {
+          const key = paneSessionKey(sessionName, paneId);
+          ws.send(encodeInputTextFrame(key, data));
+        } else {
           ws.send(data);
         }
       });
 
-      // Connect WebSocket to mirror endpoint
-      ws = new WebSocket(getMirrorWsUrl(sessionName, paneId));
-
-      ws.onopen = () => {
-        if (cancelled) {
-          ws!.close();
-          return;
-        }
-        setConnState("connected");
-      };
-
-      ws.onmessage = (event) => {
-        const data = event.data;
-        if (typeof data === "string" && data.startsWith("{")) {
-          try {
-            const msg = JSON.parse(data) as { type?: string; cols?: number; rows?: number };
-            if (msg.type === "dimensions" && msg.cols && msg.rows) {
-              // Resize terminal to match tmux pane (don't resize tmux!)
-              term!.resize(msg.cols, msg.rows);
-              return;
-            }
-          } catch {
-            /* not JSON, fall through */
-          }
-        }
-        // Raw bytes from server — write directly
-        term!.write(data);
-      };
-
-      ws.onclose = () => {
-        if (cancelled) return;
-        setConnState("error");
-      };
-
-      ws.onerror = () => {
-        if (cancelled) return;
-        setConnState("error");
-      };
+      tryConnectV3();
     }
 
     setup();
 
     return () => {
       cancelled = true;
+      cleanupTimers();
       ws?.close();
       term?.dispose();
     };
-  }, [sessionName, paneId]);
+  }, [sessionName, paneId, authTokenProp]);
 
   const stateColor =
     connState === "connected"

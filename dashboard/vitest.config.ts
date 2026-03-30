@@ -11,6 +11,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "."),
+      "@tmux-ide/ws-v3-protocol": path.resolve(__dirname, "../src/lib/ws-v3/protocol.ts"),
     },
   },
 });

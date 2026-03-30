@@ -52,9 +52,16 @@ const { positionals, values } = parseArgs({
     pr: { type: "boolean" },
     specialty: { type: "string" },
     port: { type: "string" },
+    // tunnel command flags
+    provider: { type: "string" },
+    domain: { type: "string" },
+    authtoken: { type: "string" },
     // setup command flags
     edit: { type: "boolean" },
     wizard: { type: "boolean" },
+    // remote command flags
+    url: { type: "string" },
+    "hq-url": { type: "string" },
     // send command flags
     to: { type: "string" },
     "no-enter": { type: "boolean" },
@@ -85,6 +92,8 @@ const knownCommands = new Set([
   "orchestrator",
   "settings",
   "command-center",
+  "tunnel",
+  "remote",
   "help",
 ]);
 
@@ -384,6 +393,36 @@ try {
       const scriptPath = resolve(__dirname, "../src/widgets/config/index.tsx");
       execFileSync("bun", [scriptPath, "--dir=" + resolve(startTargetDir || ".")], {
         stdio: "inherit",
+      });
+      break;
+    }
+
+    case "tunnel": {
+      const { tunnelCommand } = await import("../src/tunnel.ts");
+      await tunnelCommand(null, {
+        json,
+        sub: positionals[1],
+        args: positionals.slice(2),
+        values: {
+          provider: values.provider,
+          port: values.port,
+          domain: values.domain,
+          authtoken: values.authtoken,
+        },
+      });
+      break;
+    }
+
+    case "remote": {
+      const { remoteCommand } = await import("../src/remote.ts");
+      await remoteCommand(null, {
+        json,
+        sub: positionals[1],
+        args: positionals.slice(2),
+        values: {
+          url: values.url,
+          "hq-url": values["hq-url"],
+        },
       });
       break;
     }

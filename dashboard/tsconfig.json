@@ -18,7 +18,8 @@
     "incremental": true,
     "paths": {
       "@/*": ["./*"],
-      "@tmux-ide/schemas": ["../src/schemas/index.ts"]
+      "@tmux-ide/schemas": ["../src/schemas/index.ts"],
+      "@tmux-ide/ws-v3-protocol": ["../src/lib/ws-v3/protocol.ts"]
     },
     "plugins": [
       {

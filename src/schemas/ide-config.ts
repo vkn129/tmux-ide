@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { AuthConfigSchema } from "../lib/auth/types.ts";
+import { HQConfigSchema } from "../lib/hq/types.ts";
 
 const sizeField = z
   .string()
@@ -55,6 +57,14 @@ export const OrchestratorYamlConfigSchema = z.object({
   webhooks: z.array(WebhookConfigSchema).optional(),
 });
 
+export const TunnelConfigSchema = z.object({
+  provider: z.enum(["tailscale", "ngrok", "cloudflare"]),
+  auto_start: z.boolean().optional(),
+  port: z.number().int().positive().optional(),
+  domain: z.string().optional(),
+  authtoken: z.string().optional(),
+});
+
 export const CommandCenterConfigSchema = z.object({
   port: z.number().optional(),
   enabled: z.boolean().optional(),
@@ -74,6 +84,9 @@ export const IdeConfigSchema = z.object({
   theme: ThemeConfigSchema.optional(),
   orchestrator: OrchestratorYamlConfigSchema.optional(),
   command_center: CommandCenterConfigSchema.optional(),
+  auth: AuthConfigSchema.optional(),
+  tunnel: TunnelConfigSchema.optional(),
+  hq: HQConfigSchema.optional(),
 });
 
 export const PaneActionSchema = z.object({

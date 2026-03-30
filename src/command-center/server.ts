@@ -50,17 +50,68 @@ import {
   savePlanSchema,
   sendCommandSchema,
 } from "./schemas.ts";
+import { AuthService } from "../lib/auth/auth-service.ts";
+import { authMiddleware } from "../lib/auth/middleware.ts";
+import type { AuthConfig } from "../lib/auth/types.ts";
+import { TunnelManager } from "../lib/tunnels/manager.ts";
+import { RemoteRegistry } from "../lib/hq/registry.ts";
+import { RegistrationPayloadSchema } from "../lib/hq/types.ts";
 
-export function createApp(): Hono {
+export interface CreateAppOptions {
+  authService?: AuthService;
+  authConfig?: AuthConfig;
+  tunnelManager?: TunnelManager;
+  remoteRegistry?: RemoteRegistry;
+}
+
+export function createApp(options: CreateAppOptions = {}): Hono {
+  const authConfig: AuthConfig = options.authConfig ?? { method: "none", token_expiry: 86400 };
+  const authService = options.authService ?? new AuthService();
+
   const app = new Hono();
 
   // Allow cross-origin (Next.js dashboard, Tailscale, etc.)
   app.use("/*", cors());
 
+  // Auth middleware — passes through when method is "none"
+  app.use("/*", authMiddleware(authService, authConfig));
+
   // Global error handler
   app.onError((err, c) => {
     console.error("[command-center]", err.message);
     return c.json({ error: err.message }, 500);
+  });
+
+  // --- Auth routes (always available, bypassed by middleware) ---
+
+  app.post("/api/auth/challenge", async (c) => {
+    const body = await c.req.json();
+    const userId = body.userId ?? authService.getCurrentUser();
+    const challenge = authService.createChallenge(userId);
+    return c.json(challenge);
+  });
+
+  app.post("/api/auth/verify", async (c) => {
+    const body = await c.req.json();
+    const result = await authService.authenticateWithSSHKey({
+      publicKey: body.publicKey,
+      signature: body.signature,
+      challengeId: body.challengeId,
+    });
+    if (!result.success) {
+      return c.json({ error: result.error }, 401);
+    }
+    return c.json({ token: result.token, userId: result.userId });
+  });
+
+  app.post("/api/auth/token", async (c) => {
+    if (authConfig.method !== "none") {
+      return c.json({ error: "Direct token generation requires auth method 'none'" }, 403);
+    }
+    const body = await c.req.json();
+    const userId = body.userId ?? authService.getCurrentUser();
+    const token = authService.generateToken(userId);
+    return c.json({ token, userId });
   });
 
   // --- API routes ---
@@ -886,6 +937,88 @@ export function createApp(): Hono {
         poll();
       }
     });
+  });
+
+  // --- HQ endpoints ---
+
+  const remoteRegistry = options.remoteRegistry ?? null;
+
+  app.post("/api/hq/register", async (c) => {
+    if (!remoteRegistry) return c.json({ error: "HQ registry not enabled" }, 501);
+    const body = await c.req.json();
+    const parsed = RegistrationPayloadSchema.safeParse(body);
+    if (!parsed.success) return c.json({ error: "Invalid payload", details: parsed.error.issues }, 400);
+    try {
+      const machine = remoteRegistry.register(parsed.data);
+      return c.json({
+        ok: true,
+        id: machine.id,
+        name: machine.name,
+        registeredAt: machine.registeredAt.toISOString(),
+      });
+    } catch (err) {
+      return c.json({ error: err instanceof Error ? err.message : String(err) }, 409);
+    }
+  });
+
+  app.get("/api/hq/machines", (c) => {
+    if (!remoteRegistry) return c.json({ machines: [] });
+    const machines = remoteRegistry.getMachines().map((m) => ({
+      id: m.id,
+      name: m.name,
+      url: m.url,
+      registeredAt: m.registeredAt.toISOString(),
+      lastHeartbeat: m.lastHeartbeat.toISOString(),
+      sessions: Array.from(m.sessionIds),
+    }));
+    return c.json({ machines });
+  });
+
+  app.get("/api/hq/machines/:id", (c) => {
+    if (!remoteRegistry) return c.json({ error: "HQ registry not enabled" }, 501);
+    const machine = remoteRegistry.getMachine(c.req.param("id"));
+    if (!machine) return c.json({ error: "Machine not found" }, 404);
+    return c.json({
+      id: machine.id,
+      name: machine.name,
+      url: machine.url,
+      registeredAt: machine.registeredAt.toISOString(),
+      lastHeartbeat: machine.lastHeartbeat.toISOString(),
+      sessions: Array.from(machine.sessionIds),
+    });
+  });
+
+  app.delete("/api/hq/machines/:id", (c) => {
+    if (!remoteRegistry) return c.json({ error: "HQ registry not enabled" }, 501);
+    const removed = remoteRegistry.unregister(c.req.param("id"));
+    if (!removed) return c.json({ error: "Machine not found" }, 404);
+    return c.json({ ok: true });
+  });
+
+  // --- Tunnel endpoints ---
+
+  const tunnelManager = options.tunnelManager ?? null;
+
+  app.get("/api/tunnel", async (c) => {
+    if (!tunnelManager) return c.json({ running: false, provider: null });
+    const status = await tunnelManager.status();
+    return c.json(status);
+  });
+
+  app.post("/api/tunnel/start", async (c) => {
+    if (!tunnelManager) return c.json({ error: "Tunnel manager not configured" }, 501);
+    const body = await c.req.json().catch(() => ({}));
+    const { tunnelConfigSchema } = await import("../lib/tunnels/types.ts");
+    const parsed = tunnelConfigSchema.safeParse(body);
+    if (!parsed.success) return c.json({ error: "Invalid tunnel config", details: parsed.error.issues }, 400);
+    const status = await tunnelManager.start(parsed.data);
+    return c.json(status);
+  });
+
+  app.post("/api/tunnel/stop", async (c) => {
+    if (!tunnelManager) return c.json({ error: "Tunnel manager not configured" }, 501);
+    await tunnelManager.stop();
+    return c.json({ ok: true });
   });
 
   // Health check for daemon liveness probes

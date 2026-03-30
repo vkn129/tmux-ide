@@ -214,8 +214,59 @@ async function startCommandCenter(): Promise<void> {
     const { createApp } = await import("../command-center/server.ts");
     const { attachWebSockets } = await import("../command-center/index.ts");
     const { getRequestListener } = await import("@hono/node-server");
+    const { AuthService } = await import("./auth/auth-service.ts");
+    const { AuthConfigSchema } = await import("./auth/types.ts");
+    const { TunnelManager } = await import("./tunnels/manager.ts");
+    const { RemoteRegistry } = await import("./hq/registry.ts");
+    const { HQConfigSchema } = await import("./hq/types.ts");
 
-    const app = createApp();
+    // Load auth + tunnel + hq config from ide.yml
+    let authConfig = AuthConfigSchema.parse({});
+    let authService: InstanceType<typeof AuthService> | undefined;
+    let tunnelConfig: Record<string, unknown> | undefined;
+    let hqConfig: ReturnType<typeof HQConfigSchema.parse> | undefined;
+    try {
+      const { readConfig } = await import("./yaml-io.ts");
+      const { config } = readConfig(process.cwd());
+      if (config.auth) {
+        authConfig = AuthConfigSchema.parse(config.auth);
+      }
+      if (config.tunnel) {
+        tunnelConfig = config.tunnel as Record<string, unknown>;
+      }
+      if (config.hq) {
+        hqConfig = HQConfigSchema.parse(config.hq);
+      }
+    } catch {
+      // Config not readable — use defaults
+    }
+    authService = new AuthService(authConfig.secret);
+    const tunnelManager = new TunnelManager({ session, dir: process.cwd() });
+
+    // Start HQ registry if role is "hq"
+    let remoteRegistry: InstanceType<typeof RemoteRegistry> | undefined;
+    if (hqConfig?.enabled && hqConfig.role === "hq") {
+      let _isShuttingDown = false;
+      remoteRegistry = new RemoteRegistry({
+        healthInterval: hqConfig.heartbeat_interval,
+        isShuttingDown: () => _isShuttingDown,
+      });
+      // Wire shutdown flag
+      const origShutdown = shutdown;
+      // eslint-disable-next-line no-inner-declarations
+      function shutdownWithRegistry() {
+        _isShuttingDown = true;
+        remoteRegistry?.destroy();
+        origShutdown();
+      }
+      process.removeListener("SIGTERM", shutdown);
+      process.removeListener("SIGINT", shutdown);
+      process.on("SIGTERM", shutdownWithRegistry);
+      process.on("SIGINT", shutdownWithRegistry);
+      console.log("[daemon] HQ registry started");
+    }
+
+    const app = createApp({ authService, authConfig, tunnelManager, remoteRegistry });
 
     // Health endpoint for watchdog and external probes
     app.get("/health", (c: { json: (body: unknown, status?: number) => Response }) => {
@@ -226,7 +277,7 @@ async function startCommandCenter(): Promise<void> {
     const server = createServer(listener);
 
     // Attach WebSocket upgrade handler for pane mirrors
-    attachWebSockets(server, session, process.cwd());
+    attachWebSockets(server, session, process.cwd(), authService, authConfig);
 
     // Try requested port, fall back to auto-assign if taken
     const tryPort = (port: number): Promise<void> =>
@@ -253,6 +304,55 @@ async function startCommandCenter(): Promise<void> {
 
     await tryPort(requestedPort);
     httpServer = server;
+
+    // Auto-start tunnel if configured
+    if (tunnelConfig && tunnelConfig.auto_start) {
+      try {
+        const { tunnelConfigSchema } = await import("./tunnels/types.ts");
+        const addr = server.address();
+        const ccPort = typeof addr === "object" && addr ? addr.port : requestedPort;
+        const parsed = tunnelConfigSchema.parse({
+          ...tunnelConfig,
+          port: tunnelConfig.port ?? ccPort,
+        });
+        await tunnelManager.start(parsed);
+        console.log("[daemon] Tunnel auto-started");
+      } catch (err) {
+        console.error("[daemon] Tunnel auto-start failed:", err);
+      }
+    }
+
+    // Auto-start HQ client if role is "remote"
+    if (hqConfig?.enabled && hqConfig.role === "remote" && hqConfig.hq_url) {
+      try {
+        const { HQClient } = await import("./hq/client.ts");
+        const os = await import("node:os");
+        const addr = server.address();
+        const ccPort = typeof addr === "object" && addr ? addr.port : requestedPort;
+        const hqClient = new HQClient({
+          hqUrl: hqConfig.hq_url,
+          secret: hqConfig.secret ?? "",
+          machineName: hqConfig.machine_name ?? os.hostname(),
+          remoteUrl: `http://localhost:${ccPort}`,
+          heartbeatInterval: hqConfig.heartbeat_interval,
+        });
+        await hqClient.register();
+        console.log(`[daemon] Registered with HQ as ${hqClient.getName()}`);
+
+        // Deregister on shutdown
+        const origShutdownFn = shutdown;
+        process.removeListener("SIGTERM", shutdown);
+        process.removeListener("SIGINT", shutdown);
+        const shutdownWithHQ = async () => {
+          await hqClient.destroy();
+          origShutdownFn();
+        };
+        process.on("SIGTERM", () => void shutdownWithHQ());
+        process.on("SIGINT", () => void shutdownWithHQ());
+      } catch (err) {
+        console.error("[daemon] HQ client registration failed:", err);
+      }
+    }
   } catch (err) {
     // Command center failed but daemon continues (monitor + orchestrator still work)
     console.error("[daemon] Command Center failed to start:", err);

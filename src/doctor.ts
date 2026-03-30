@@ -89,6 +89,39 @@ export async function doctor({ json }: { json?: boolean } = {}): Promise<void> {
     ),
   );
 
+  checks.push(
+    check(
+      "tailscale CLI",
+      () => {
+        const version = execSync("tailscale version", { encoding: "utf-8" }).trim().split("\n")[0]!;
+        return version;
+      },
+      { optional: true },
+    ),
+  );
+
+  checks.push(
+    check(
+      "ngrok CLI",
+      () => {
+        const version = execSync("ngrok version", { encoding: "utf-8" }).trim();
+        return version;
+      },
+      { optional: true },
+    ),
+  );
+
+  checks.push(
+    check(
+      "cloudflared CLI",
+      () => {
+        const version = execSync("cloudflared --version", { encoding: "utf-8" }).trim();
+        return version;
+      },
+      { optional: true },
+    ),
+  );
+
   const allPass = checks.every((c) => c.pass || c.optional);
 
   if (json) {
