@@ -174,36 +174,121 @@ export function setPaneTitle(targetPane: string, title: string): void {
   runTmux(["select-pane", "-t", targetPane, "-T", title], { stdio: "inherit" });
 }
 
+export function setPaneOption(targetPane: string, option: string, value: string): void {
+  runTmux(["set-option", "-pqt", targetPane, option, value]);
+}
+
 export function runSessionCommand(args: string[]): void {
   runTmux(args, { stdio: "inherit" });
 }
 
-export function startSessionMonitor(session: string, monitorScript: string): void {
-  const child = _spawner("node", [monitorScript, session], {
+/**
+ * Check if a process is still alive.
+ */
+export function isProcessAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0); // signal 0 = check existence
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function startSessionMonitor(session: string, monitorScript: string, port?: number): void {
+  // Check if an existing monitor is already alive for this session.
+  // This prevents duplicate monitors on rapid restart cycles.
+  try {
+    const existingPid = (
+      runTmux(["show-option", "-qvt", session, "@monitor_pid"], {
+        encoding: "utf-8",
+      }) as string
+    ).trim();
+    if (existingPid) {
+      const pid = parseInt(existingPid, 10);
+      if (isProcessAlive(pid)) {
+        // Monitor is still running — kill it first for a clean handoff
+        stopSessionMonitor(session);
+        // Brief wait for graceful shutdown
+        let attempts = 0;
+        while (isProcessAlive(pid) && attempts < 10) {
+          const { Atomics, SharedArrayBuffer } = globalThis;
+          Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 100);
+          attempts++;
+        }
+      }
+    }
+  } catch {
+    // Session variable not readable — continue with fresh start
+  }
+
+  // Spawn the daemon via bun (runs TypeScript source directly).
+  // Use a process group so we can kill the entire tree on stop.
+  const child = _spawner("bun", [monitorScript, session, String(port ?? 0)], {
     detached: true,
     stdio: "ignore",
+    cwd: process.cwd(),
   });
   child.unref();
-  // Store PID as tmux session variable for later cleanup
+  // Store PID as tmux session variable for later cleanup.
+  // This is the actual node process PID (not a shell wrapper).
   runTmux(["set-option", "-t", session, "@monitor_pid", String(child.pid)]);
 }
 
 export function stopSessionMonitor(session: string): void {
   try {
     const pid = (
-      runTmux(["show-option", "-gqvt", session, "@monitor_pid"], {
+      runTmux(["show-option", "-qvt", session, "@monitor_pid"], {
         encoding: "utf-8",
       }) as string
     ).trim();
-    if (pid) process.kill(parseInt(pid, 10));
+    if (pid) {
+      const numPid = parseInt(pid, 10);
+      // Kill the process group (negative PID) to catch any children
+      try {
+        process.kill(-numPid, "SIGTERM");
+      } catch {
+        // Process group kill failed — try direct kill
+        try {
+          process.kill(numPid, "SIGTERM");
+        } catch {
+          /* already gone */
+        }
+      }
+    }
   } catch {
     /* session or process already gone */
   }
 }
 
+export function getDaemonPort(session: string): number | null {
+  try {
+    const raw = runTmux(["show-option", "-qvt", session, "@command_center_port"], {
+      encoding: "utf-8",
+    }) as string;
+    const port = parseInt(raw.trim(), 10);
+    return isNaN(port) ? null : port;
+  } catch {
+    return null;
+  }
+}
+
+export async function isDaemonHealthy(session: string): Promise<boolean> {
+  const port = getDaemonPort(session);
+  if (!port) return false;
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 2000);
+    const res = await fetch(`http://localhost:${port}/health`, { signal: controller.signal });
+    clearTimeout(timeout);
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 export function getSessionVariable(session: string, name: string): string | null {
   try {
-    const raw = runTmux(["show-option", "-gqvt", session, name], {
+    const raw = runTmux(["show-option", "-qvt", session, name], {
       encoding: "utf-8",
     }) as string;
     return raw.trim() || null;

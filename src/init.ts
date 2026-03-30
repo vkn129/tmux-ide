@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, renameSync } from "node:fs";
 import { resolve, basename, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -28,7 +28,9 @@ export async function init({
     let content = readFileSync(templatePath, "utf-8");
     const name = basename(dir);
     content = content.replace(/^name: .+/m, `name: ${name}`);
-    writeFileSync(configPath, content);
+    const tmpPath = configPath + ".tmp";
+    writeFileSync(tmpPath, content);
+    renameSync(tmpPath, configPath);
 
     if (json) {
       console.log(JSON.stringify({ created: true, template, name }));
@@ -48,7 +50,9 @@ export async function init({
     // Use detected stack to generate config
     const config = suggestConfig(dir, detected);
     const yaml = (await import("js-yaml")).default;
-    writeFileSync(configPath, yaml.dump(config, { lineWidth: -1, noRefs: true, quotingType: '"' }));
+    const tmpPath2 = configPath + ".tmp";
+    writeFileSync(tmpPath2, yaml.dump(config, { lineWidth: -1, noRefs: true, quotingType: '"' }));
+    renameSync(tmpPath2, configPath);
 
     const desc = detected.frameworks.join(" + ");
     if (json) {
@@ -63,7 +67,9 @@ export async function init({
     const templatePath = resolve(__dirname, "..", "templates", "default.yml");
     let content = readFileSync(templatePath, "utf-8");
     content = content.replace(/^name: .+/m, `name: ${name}`);
-    writeFileSync(configPath, content);
+    const tmpPath3 = configPath + ".tmp";
+    writeFileSync(tmpPath3, content);
+    renameSync(tmpPath3, configPath);
 
     if (json) {
       console.log(JSON.stringify({ created: true, template: "default", name }));

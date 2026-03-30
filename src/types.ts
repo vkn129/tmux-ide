@@ -1,45 +1,14 @@
-export interface IdeConfig {
-  name?: string;
-  before?: string;
-  team?: { name: string };
-  rows: Row[];
-  theme?: ThemeConfig;
-}
+export type {
+  Pane,
+  Row,
+  ThemeConfig,
+  OrchestratorYamlConfig,
+  CommandCenterConfig,
+  IdeConfig,
+  PaneAction,
+  SessionState,
+} from "./schemas/ide-config.ts";
 
-export interface Row {
-  size?: string;
-  panes: Pane[];
-}
-
-export interface Pane {
-  title?: string;
-  command?: string;
-  dir?: string;
-  size?: string;
-  focus?: boolean;
-  env?: Record<string, string | number>;
-  role?: "lead" | "teammate";
-  task?: string;
-}
-
-export interface ThemeConfig {
-  accent?: string;
-  border?: string;
-  bg?: string;
-  fg?: string;
-}
+export type { ProofSchema } from "./schemas/index.ts";
 
 export type TmuxCommand = string[];
-
-export interface PaneAction {
-  targetPane: string;
-  title: string | null;
-  chdir: string | null;
-  exports: string[];
-  command: string | null;
-}
-
-export interface SessionState {
-  running: boolean;
-  reason: string | null;
-}

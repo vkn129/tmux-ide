@@ -10,6 +10,9 @@ interface MonitorPane {
   pid: string;
   cmd?: string;
   title?: string;
+  role?: string;
+  type?: string;
+  name?: string;
 }
 
 // --- Port detection (pure helpers) ---
@@ -89,6 +92,15 @@ export function computeAgentStates(panes: MonitorPane[]): Map<string, "busy" | "
   // Returns Map<paneId, "busy" | "idle" | null>
   const states = new Map<string, "busy" | "idle" | null>();
   for (const pane of panes) {
+    const role = pane.role ?? "";
+
+    // Primary: use @ide_role pane option if available
+    if (role === "lead" || role === "teammate") {
+      states.set(pane.id, SPINNERS.test(pane.title ?? "") ? "busy" : "idle");
+      continue;
+    }
+
+    // Fallback: command-based detection for pre-upgrade sessions
     const cmd = (pane.cmd ?? "").toLowerCase();
     if (!cmd.includes("claude") && !cmd.includes("codex")) {
       states.set(pane.id, null);
@@ -138,12 +150,20 @@ if (isMainModule) {
       "-t",
       session,
       "-F",
-      "#{pane_id}\t#{pane_pid}\t#{pane_current_command}\t#{pane_title}",
+      "#{pane_id}\t#{pane_pid}\t#{pane_current_command}\t#{pane_title}\t#{@ide_role}\t#{@ide_type}\t#{@ide_name}",
     );
     if (!raw) return [];
     return raw.split("\n").map((line) => {
-      const [id, pid, cmd, title] = line.split("\t");
-      return { id: id!, pid: pid!, cmd, title };
+      const [id, pid, cmd, title, role, type, name] = line.split("\t");
+      return {
+        id: id!,
+        pid: pid!,
+        cmd,
+        title,
+        role: role || undefined,
+        type: type || undefined,
+        name: name || undefined,
+      };
     });
   }
 
@@ -159,12 +179,13 @@ if (isMainModule) {
     const portPanes = computePortPanes(panes);
     const agentStates = computeAgentStates(panes);
 
-    // Build state fingerprint for change detection
+    // Build state fingerprint for change detection (includes title drift)
     const stateKey = panes
       .map((p) => {
         const port = portPanes.has(p.id) ? "1" : "0";
         const agent = agentStates.get(p.id) ?? "-";
-        return `${p.id}:${port}:${agent}`;
+        const titleDrift = p.name && p.title !== p.name ? "d" : "ok";
+        return `${p.id}:${port}:${agent}:${titleDrift}`;
       })
       .join("|");
 
@@ -178,12 +199,84 @@ if (isMainModule) {
       tmuxSilent("set-option", "-pqt", pane.id, "@has_port", hasPort);
       tmuxSilent("set-option", "-pqt", pane.id, "@agent_busy", agent === "busy" ? "1" : "0");
       tmuxSilent("set-option", "-pqt", pane.id, "@agent_idle", agent === "idle" ? "1" : "0");
+
+      // Restore configured pane title if Claude Code changed it
+      if (pane.name && pane.title !== pane.name) {
+        tmuxSilent("select-pane", "-t", pane.id, "-T", pane.name);
+      }
     }
 
     tmuxSilent("refresh-client", "-S");
     lastState = stateKey;
   }
 
-  setInterval(tick, INTERVAL);
+  const monitorInterval = setInterval(tick, INTERVAL);
   tick(); // run immediately
+
+  // Unified shutdown handler — cleans up everything on SIGTERM/SIGINT
+  let stopOrchestrator: (() => void) | null = null;
+
+  function shutdown() {
+    clearInterval(monitorInterval);
+    if (stopOrchestrator) stopOrchestrator();
+    process.exit(0);
+  }
+
+  process.on("SIGTERM", shutdown);
+  process.on("SIGINT", shutdown);
+
+  // Start orchestrator if enabled in config
+  (async () => {
+    try {
+      const { readConfig } = await import("./yaml-io.ts");
+      const { config } = readConfig(process.cwd());
+
+      if (config.orchestrator?.enabled) {
+        try {
+          const { createOrchestrator } = await import("./orchestrator.ts");
+
+          // Configure webhooks for event delivery
+          if (config.orchestrator.webhooks?.length) {
+            const { setWebhookConfig } = await import("./event-log.ts");
+            setWebhookConfig(config.orchestrator.webhooks);
+          }
+
+          const orch = config.orchestrator;
+
+          // Build pane specialty map from ide.yml config
+          const paneSpecialties = new Map<string, string[]>();
+          for (const row of config.rows) {
+            for (const pane of row.panes) {
+              if (pane.specialty && pane.title) {
+                paneSpecialties.set(
+                  pane.title,
+                  pane.specialty.split(",").map((s: string) => s.trim().toLowerCase()),
+                );
+              }
+            }
+          }
+
+          stopOrchestrator = createOrchestrator({
+            session,
+            dir: process.cwd(),
+            autoDispatch: orch.auto_dispatch ?? true,
+            stallTimeout: orch.stall_timeout ?? 300000,
+            pollInterval: orch.poll_interval ?? 5000,
+            worktreeRoot: orch.worktree_root ?? ".worktrees/",
+            masterPane: orch.master_pane ?? null,
+            beforeRun: orch.before_run ?? null,
+            afterRun: orch.after_run ?? null,
+            cleanupOnDone: orch.cleanup_on_done ?? false,
+            maxConcurrentAgents: orch.max_concurrent_agents ?? 10,
+            dispatchMode: orch.dispatch_mode ?? "tasks",
+            paneSpecialties,
+          });
+        } catch {
+          // Orchestrator module not available yet
+        }
+      }
+    } catch {
+      // Config not readable — skip orchestrator
+    }
+  })();
 }

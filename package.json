@@ -4,24 +4,22 @@
   "description": "Turn any project into a tmux-powered terminal IDE with a simple ide.yml",
   "type": "module",
   "bin": {
-    "tmux-ide": "bin/cli.js"
+    "tmux-ide": "bin/cli.ts"
   },
   "files": [
     "bin",
-    "dist",
+    "src",
     "scripts",
     "skill",
     "templates"
   ],
   "scripts": {
-    "clean": "rm -rf dist",
-    "build": "pnpm run clean && tsc",
     "typecheck": "tsc --noEmit",
-    "dev": "node --experimental-strip-types bin/cli.js",
-    "test": "node --experimental-strip-types --test src/*.test.ts src/lib/*.test.ts",
-    "test:unit": "node --experimental-strip-types --test src/cli.test.ts src/config-cli.test.ts src/config.test.ts src/detect.test.ts src/doctor.test.ts src/init.test.ts src/inspect.test.ts src/launch.test.ts src/ls.test.ts src/stop.test.ts src/validate.test.ts src/lib/*.test.ts",
-    "test:integration": "node --experimental-strip-types --test src/integration.test.ts",
-    "lint": "eslint .",
+    "dev": "bun bin/cli.ts",
+    "test": "bun test",
+    "test:unit": "bun test src/ --ignore 'src/integration.test.ts'",
+    "test:integration": "bun test src/integration.test.ts",
+    "lint": "eslint bin scripts src",
     "lint:workspace": "turbo run lint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -29,9 +27,9 @@
     "typecheck:workspace": "turbo run typecheck",
     "docs:build": "turbo run build --filter=@tmux-ide/docs",
     "pack:check": "npm pack --dry-run --cache /tmp/tmux-ide-npm-cache > /dev/null",
-    "check": "pnpm run lint:workspace && pnpm run format:check && pnpm run build && pnpm run test:unit && pnpm run docs:build && pnpm run pack:check",
-    "prepublishOnly": "pnpm run build",
+    "check": "pnpm run lint:workspace && pnpm run format:check && pnpm run typecheck && pnpm run test:unit && pnpm run docs:build && pnpm run pack:check",
     "postinstall": "node scripts/postinstall.js",
+    "test:dashboard": "cd dashboard && pnpm test",
     "docs": "turbo run dev --filter=@tmux-ide/docs"
   },
   "keywords": [
@@ -42,7 +40,7 @@
     "developer-tools"
   ],
   "engines": {
-    "node": ">=18"
+    "bun": ">=1.0"
   },
   "repository": {
     "type": "git",
@@ -55,10 +53,24 @@
   "license": "MIT",
   "packageManager": "pnpm@10.21.0",
   "dependencies": {
-    "js-yaml": "^4.1.1"
+    "@hono/node-server": "^1.19.11",
+    "@hono/zod-validator": "^0.7.6",
+    "@opentui/core": "^0.1.88",
+    "@opentui/core-darwin-arm64": "^0.1.88",
+    "@opentui/solid": "^0.1.88",
+    "@parcel/watcher": "^2.5.6",
+    "@types/ws": "^8.18.1",
+    "hono": "^4.12.8",
+    "ignore": "^7.0.5",
+    "js-yaml": "^4.1.1",
+    "node-pty": "1.2.0-beta.12",
+    "solid-js": "^1.9.11",
+    "ws": "^8.20.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@tsconfig/bun": "^1.0.10",
     "@types/node": "^25.5.0",
     "@typescript-eslint/eslint-plugin": "^8.57.1",
     "@typescript-eslint/parser": "^8.57.1",
