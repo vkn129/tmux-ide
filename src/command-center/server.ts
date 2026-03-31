@@ -719,10 +719,16 @@ export function createApp(options: CreateAppOptions = {}): Hono {
     const mission = loadMission(session.dir);
     if (!mission) return c.json({ milestones: [] });
     const tasks = loadTasks(session.dir);
-    const milestones = [...mission.milestones].sort((a, b) => a.order - b.order).map((m) => {
-      const mTasks = tasks.filter((t) => t.milestone === m.id);
-      return { ...m, taskCount: mTasks.length, tasksDone: mTasks.filter((t) => t.status === "done").length };
-    });
+    const milestones = [...mission.milestones]
+      .sort((a, b) => a.order - b.order)
+      .map((m) => {
+        const mTasks = tasks.filter((t) => t.milestone === m.id);
+        return {
+          ...m,
+          taskCount: mTasks.length,
+          tasksDone: mTasks.filter((t) => t.status === "done").length,
+        };
+      });
     return c.json({ milestones });
   });
 
@@ -740,63 +746,73 @@ export function createApp(options: CreateAppOptions = {}): Hono {
     return c.json({ milestone, tasks });
   });
 
-  app.post("/api/project/:name/milestones", zValidator("json", createMilestoneSchema), async (c) => {
-    const name = c.req.param("name");
-    const sessions = discoverSessions();
-    const session = sessions.find((s) => s.name === name);
-    if (!session) return c.json({ error: "Session not found" }, 404);
-    const mission = loadMission(session.dir);
-    if (!mission) return c.json({ error: "No mission" }, 404);
-    const body = c.req.valid("json");
-    const id = `M${body.sequence}`;
-    if (mission.milestones.find((m) => m.id === id)) {
-      return c.json({ error: `Milestone ${id} already exists` }, 409);
-    }
-    const now = new Date().toISOString();
-    const hasActive = mission.milestones.some((m) => m.status === "active" || m.status === "done");
-    const milestone = {
-      id,
-      title: body.title,
-      description: body.description ?? "",
-      status: (hasActive ? "locked" : "active") as "locked" | "active",
-      order: body.sequence,
-      created: now,
-      updated: now,
-    };
-    mission.milestones.push(milestone);
-    mission.milestones.sort((a, b) => a.order - b.order);
-    mission.updated = now;
-    saveMission(session.dir, mission);
-    return c.json({ ok: true, milestone }, 201);
-  });
-
-  app.post("/api/project/:name/milestones/:id", zValidator("json", updateMilestoneSchema), async (c) => {
-    const name = c.req.param("name");
-    const milestoneId = c.req.param("id");
-    const sessions = discoverSessions();
-    const session = sessions.find((s) => s.name === name);
-    if (!session) return c.json({ error: "Session not found" }, 404);
-    const mission = loadMission(session.dir);
-    if (!mission) return c.json({ error: "No mission" }, 404);
-    const milestone = mission.milestones.find((m) => m.id === milestoneId);
-    if (!milestone) return c.json({ error: "Milestone not found" }, 404);
-    const body = c.req.valid("json");
-    if (body.status && !isValidMilestoneTransition(milestone.status, body.status)) {
-      return c.json(
-        {
-          error: `Invalid milestone status transition: ${milestone.status} -> ${body.status}`,
-        },
-        409,
+  app.post(
+    "/api/project/:name/milestones",
+    zValidator("json", createMilestoneSchema),
+    async (c) => {
+      const name = c.req.param("name");
+      const sessions = discoverSessions();
+      const session = sessions.find((s) => s.name === name);
+      if (!session) return c.json({ error: "Session not found" }, 404);
+      const mission = loadMission(session.dir);
+      if (!mission) return c.json({ error: "No mission" }, 404);
+      const body = c.req.valid("json");
+      const id = `M${body.sequence}`;
+      if (mission.milestones.find((m) => m.id === id)) {
+        return c.json({ error: `Milestone ${id} already exists` }, 409);
+      }
+      const now = new Date().toISOString();
+      const hasActive = mission.milestones.some(
+        (m) => m.status === "active" || m.status === "done",
       );
-    }
-    if (body.status) milestone.status = body.status;
-    if (body.title) milestone.title = body.title;
-    if (body.description !== undefined) milestone.description = body.description;
-    milestone.updated = new Date().toISOString();
-    mission.updated = milestone.updated;
-    saveMission(session.dir, mission);
-    return c.json({ ok: true, milestone });
-  });
+      const milestone = {
+        id,
+        title: body.title,
+        description: body.description ?? "",
+        status: (hasActive ? "locked" : "active") as "locked" | "active",
+        order: body.sequence,
+        created: now,
+        updated: now,
+      };
+      mission.milestones.push(milestone);
+      mission.milestones.sort((a, b) => a.order - b.order);
+      mission.updated = now;
+      saveMission(session.dir, mission);
+      return c.json({ ok: true, milestone }, 201);
+    },
+  );
+
+  app.post(
+    "/api/project/:name/milestones/:id",
+    zValidator("json", updateMilestoneSchema),
+    async (c) => {
+      const name = c.req.param("name");
+      const milestoneId = c.req.param("id");
+      const sessions = discoverSessions();
+      const session = sessions.find((s) => s.name === name);
+      if (!session) return c.json({ error: "Session not found" }, 404);
+      const mission = loadMission(session.dir);
+      if (!mission) return c.json({ error: "No mission" }, 404);
+      const milestone = mission.milestones.find((m) => m.id === milestoneId);
+      if (!milestone) return c.json({ error: "Milestone not found" }, 404);
+      const body = c.req.valid("json");
+      if (body.status && !isValidMilestoneTransition(milestone.status, body.status)) {
+        return c.json(
+          {
+            error: `Invalid milestone status transition: ${milestone.status} -> ${body.status}`,
+          },
+          409,
+        );
+      }
+      if (body.status) milestone.status = body.status;
+      if (body.title) milestone.title = body.title;
+      if (body.description !== undefined) milestone.description = body.description;
+      milestone.updated = new Date().toISOString();
+      mission.updated = milestone.updated;
+      saveMission(session.dir, mission);
+      return c.json({ ok: true, milestone });
+    },
+  );
 
   // --- Validation endpoints ---
 
@@ -818,26 +834,30 @@ export function createApp(options: CreateAppOptions = {}): Hono {
     return c.json(checkCoverage(session.dir));
   });
 
-  app.post("/api/project/:name/validation/assert/:assertId", zValidator("json", updateAssertionSchema), async (c) => {
-    const name = c.req.param("name");
-    const assertId = c.req.param("assertId");
-    const sessions = discoverSessions();
-    const session = sessions.find((s) => s.name === name);
-    if (!session) return c.json({ error: "Session not found" }, 404);
-    const body = c.req.valid("json");
-    ensureTasksDir(session.dir);
-    const state = loadValidationState(session.dir) ?? { assertions: {}, lastVerified: null };
-    state.assertions[assertId] = {
-      status: body.status,
-      verifiedBy: body.verifiedBy ?? null,
-      verifiedAt: new Date().toISOString(),
-      evidence: body.evidence ?? null,
-      blockedBy: body.status === "blocked" ? (body.evidence ?? null) : null,
-    };
-    state.lastVerified = new Date().toISOString();
-    saveValidationState(session.dir, state);
-    return c.json({ ok: true, assertionId: assertId, ...state.assertions[assertId] });
-  });
+  app.post(
+    "/api/project/:name/validation/assert/:assertId",
+    zValidator("json", updateAssertionSchema),
+    async (c) => {
+      const name = c.req.param("name");
+      const assertId = c.req.param("assertId");
+      const sessions = discoverSessions();
+      const session = sessions.find((s) => s.name === name);
+      if (!session) return c.json({ error: "Session not found" }, 404);
+      const body = c.req.valid("json");
+      ensureTasksDir(session.dir);
+      const state = loadValidationState(session.dir) ?? { assertions: {}, lastVerified: null };
+      state.assertions[assertId] = {
+        status: body.status,
+        verifiedBy: body.verifiedBy ?? null,
+        verifiedAt: new Date().toISOString(),
+        evidence: body.evidence ?? null,
+        blockedBy: body.status === "blocked" ? (body.evidence ?? null) : null,
+      };
+      state.lastVerified = new Date().toISOString();
+      saveValidationState(session.dir, state);
+      return c.json({ ok: true, assertionId: assertId, ...state.assertions[assertId] });
+    },
+  );
 
   // --- Skill endpoints ---
 

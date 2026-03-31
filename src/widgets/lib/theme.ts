@@ -64,23 +64,45 @@ function parseColor(color: string): RGBA | null {
   // tmux colour0–colour255
   const tmuxMatch = color.match(/^colou?r(\d+)$/);
   if (tmuxMatch) {
-    const n = parseInt(tmuxMatch[1], 10);
+    const rawIndex = tmuxMatch[1];
+    if (!rawIndex) return null;
+    const n = parseInt(rawIndex, 10);
     if (n < 0 || n > 255) return null;
 
     // Standard colors 0–15 (approximate to common terminal defaults)
     const STANDARD: [number, number, number][] = [
-      [0, 0, 0], [128, 0, 0], [0, 128, 0], [128, 128, 0],
-      [0, 0, 128], [128, 0, 128], [0, 128, 128], [192, 192, 192],
-      [128, 128, 128], [255, 0, 0], [0, 255, 0], [255, 255, 0],
-      [0, 0, 255], [255, 0, 255], [0, 255, 255], [255, 255, 255],
+      [0, 0, 0],
+      [128, 0, 0],
+      [0, 128, 0],
+      [128, 128, 0],
+      [0, 0, 128],
+      [128, 0, 128],
+      [0, 128, 128],
+      [192, 192, 192],
+      [128, 128, 128],
+      [255, 0, 0],
+      [0, 255, 0],
+      [255, 255, 0],
+      [0, 0, 255],
+      [255, 0, 255],
+      [0, 255, 255],
+      [255, 255, 255],
     ];
-    if (n < 16) return rgba(...STANDARD[n]);
+    if (n < 16) {
+      const standard = STANDARD[n];
+      if (!standard) return null;
+      return rgba(standard[0], standard[1], standard[2]);
+    }
 
     // 6×6×6 color cube (16–231)
     if (n < 232) {
       const idx = n - 16;
-      const LEVELS = [0, 95, 135, 175, 215, 255];
-      return rgba(LEVELS[Math.floor(idx / 36)], LEVELS[Math.floor((idx % 36) / 6)], LEVELS[idx % 6]);
+      const LEVELS: number[] = [0, 95, 135, 175, 215, 255];
+      const r = LEVELS[Math.floor(idx / 36)];
+      const g = LEVELS[Math.floor((idx % 36) / 6)];
+      const b = LEVELS[idx % 6];
+      if (r == null || g == null || b == null) return null;
+      return rgba(r, g, b);
     }
 
     // Grayscale ramp (232–255)
@@ -92,9 +114,18 @@ function parseColor(color: string): RGBA | null {
   const hexMatch = color.match(/^#([0-9a-fA-F]{3,6})$/);
   if (hexMatch) {
     let hex = hexMatch[1];
-    if (hex.length === 3) hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+    if (!hex) return null;
+    if (hex.length === 3) {
+      const [r, g, b] = hex.split("");
+      if (!r || !g || !b) return null;
+      hex = r + r + g + g + b + b;
+    }
     if (hex.length !== 6) return null;
-    return rgba(parseInt(hex.slice(0, 2), 16), parseInt(hex.slice(2, 4), 16), parseInt(hex.slice(4, 6), 16));
+    return rgba(
+      parseInt(hex.slice(0, 2), 16),
+      parseInt(hex.slice(2, 4), 16),
+      parseInt(hex.slice(4, 6), 16),
+    );
   }
 
   return null;
@@ -103,7 +134,12 @@ function parseColor(color: string): RGBA | null {
 export function createTheme(config?: Record<string, string>): WidgetTheme {
   if (!config) return DEFAULTS;
   const theme = { ...DEFAULTS };
-  const MAP: Record<string, keyof WidgetTheme> = { accent: "accent", border: "border", bg: "bg", fg: "fg" };
+  const MAP: Record<string, keyof WidgetTheme> = {
+    accent: "accent",
+    border: "border",
+    bg: "bg",
+    fg: "fg",
+  };
   for (const [key, prop] of Object.entries(MAP)) {
     const val = config[key];
     if (val) {

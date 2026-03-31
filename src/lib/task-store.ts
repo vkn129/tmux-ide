@@ -147,7 +147,6 @@ export function normalizeTask(raw: Record<string, unknown>): Task {
   } as Task;
 }
 
-
 export function getTasksRoot(dir: string): string {
   return resolve(dir, TASKS_DIR);
 }

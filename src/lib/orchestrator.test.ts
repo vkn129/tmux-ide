@@ -46,10 +46,7 @@ import {
   type Goal,
   type Mission,
 } from "./task-store.ts";
-import {
-  loadValidationState,
-  saveValidationState,
-} from "./validation.ts";
+import { loadValidationState, saveValidationState } from "./validation.ts";
 import { _setExecutor, type PaneInfo } from "../widgets/lib/pane-comms.ts";
 import {
   makeTask,
@@ -543,7 +540,6 @@ describe("claim locking", () => {
     expect(!state.claimedTasks.has("001")).toBeTruthy();
   });
 });
-
 
 describe("createOrchestrator timer", () => {
   it("auto-assigns a task within poll interval", async () => {
@@ -1300,8 +1296,24 @@ describe("milestone gating", () => {
 
   it("getCurrentMilestone returns first non-done milestone by order", () => {
     setupMission([
-      { id: "M2", title: "Phase 2", description: "", status: "locked", order: 2, created: "2026-01-01T00:00:00Z", updated: "2026-01-01T00:00:00Z" },
-      { id: "M1", title: "Phase 1", description: "", status: "active", order: 1, created: "2026-01-01T00:00:00Z", updated: "2026-01-01T00:00:00Z" },
+      {
+        id: "M2",
+        title: "Phase 2",
+        description: "",
+        status: "locked",
+        order: 2,
+        created: "2026-01-01T00:00:00Z",
+        updated: "2026-01-01T00:00:00Z",
+      },
+      {
+        id: "M1",
+        title: "Phase 1",
+        description: "",
+        status: "active",
+        order: 1,
+        created: "2026-01-01T00:00:00Z",
+        updated: "2026-01-01T00:00:00Z",
+      },
     ]);
     const current = getCurrentMilestone(tmpDir);
     expect(current?.id).toBe("M1");
@@ -1309,24 +1321,72 @@ describe("milestone gating", () => {
 
   it("isMilestoneReady returns true when all predecessors are done", () => {
     setupMission([
-      { id: "M1", title: "Phase 1", description: "", status: "done", order: 1, created: "2026-01-01T00:00:00Z", updated: "2026-01-01T00:00:00Z" },
-      { id: "M2", title: "Phase 2", description: "", status: "active", order: 2, created: "2026-01-01T00:00:00Z", updated: "2026-01-01T00:00:00Z" },
+      {
+        id: "M1",
+        title: "Phase 1",
+        description: "",
+        status: "done",
+        order: 1,
+        created: "2026-01-01T00:00:00Z",
+        updated: "2026-01-01T00:00:00Z",
+      },
+      {
+        id: "M2",
+        title: "Phase 2",
+        description: "",
+        status: "active",
+        order: 2,
+        created: "2026-01-01T00:00:00Z",
+        updated: "2026-01-01T00:00:00Z",
+      },
     ]);
     expect(isMilestoneReady(tmpDir, "M2")).toBe(true);
   });
 
   it("isMilestoneReady returns false when predecessor is not done", () => {
     setupMission([
-      { id: "M1", title: "Phase 1", description: "", status: "active", order: 1, created: "2026-01-01T00:00:00Z", updated: "2026-01-01T00:00:00Z" },
-      { id: "M2", title: "Phase 2", description: "", status: "locked", order: 2, created: "2026-01-01T00:00:00Z", updated: "2026-01-01T00:00:00Z" },
+      {
+        id: "M1",
+        title: "Phase 1",
+        description: "",
+        status: "active",
+        order: 1,
+        created: "2026-01-01T00:00:00Z",
+        updated: "2026-01-01T00:00:00Z",
+      },
+      {
+        id: "M2",
+        title: "Phase 2",
+        description: "",
+        status: "locked",
+        order: 2,
+        created: "2026-01-01T00:00:00Z",
+        updated: "2026-01-01T00:00:00Z",
+      },
     ]);
     expect(isMilestoneReady(tmpDir, "M2")).toBe(false);
   });
 
   it("dispatches task with active milestone M1", () => {
     setupMission([
-      { id: "M1", title: "Phase 1", description: "", status: "active", order: 1, created: "2026-01-01T00:00:00Z", updated: "2026-01-01T00:00:00Z" },
-      { id: "M2", title: "Phase 2", description: "", status: "locked", order: 2, created: "2026-01-01T00:00:00Z", updated: "2026-01-01T00:00:00Z" },
+      {
+        id: "M1",
+        title: "Phase 1",
+        description: "",
+        status: "active",
+        order: 1,
+        created: "2026-01-01T00:00:00Z",
+        updated: "2026-01-01T00:00:00Z",
+      },
+      {
+        id: "M2",
+        title: "Phase 2",
+        description: "",
+        status: "locked",
+        order: 2,
+        created: "2026-01-01T00:00:00Z",
+        updated: "2026-01-01T00:00:00Z",
+      },
     ]);
 
     const task = makeTask({ id: "001", milestone: "M1" });
@@ -1348,8 +1408,24 @@ describe("milestone gating", () => {
 
   it("skips task with locked milestone M2 when M1 is still active", () => {
     setupMission([
-      { id: "M1", title: "Phase 1", description: "", status: "active", order: 1, created: "2026-01-01T00:00:00Z", updated: "2026-01-01T00:00:00Z" },
-      { id: "M2", title: "Phase 2", description: "", status: "locked", order: 2, created: "2026-01-01T00:00:00Z", updated: "2026-01-01T00:00:00Z" },
+      {
+        id: "M1",
+        title: "Phase 1",
+        description: "",
+        status: "active",
+        order: 1,
+        created: "2026-01-01T00:00:00Z",
+        updated: "2026-01-01T00:00:00Z",
+      },
+      {
+        id: "M2",
+        title: "Phase 2",
+        description: "",
+        status: "locked",
+        order: 2,
+        created: "2026-01-01T00:00:00Z",
+        updated: "2026-01-01T00:00:00Z",
+      },
     ]);
 
     const task = makeTask({ id: "001", milestone: "M2" });
@@ -1371,7 +1447,15 @@ describe("milestone gating", () => {
 
   it("tasks without milestone field always dispatch in missions mode", () => {
     setupMission([
-      { id: "M1", title: "Phase 1", description: "", status: "active", order: 1, created: "2026-01-01T00:00:00Z", updated: "2026-01-01T00:00:00Z" },
+      {
+        id: "M1",
+        title: "Phase 1",
+        description: "",
+        status: "active",
+        order: 1,
+        created: "2026-01-01T00:00:00Z",
+        updated: "2026-01-01T00:00:00Z",
+      },
     ]);
 
     const task = makeTask({ id: "001", milestone: null });
@@ -1392,8 +1476,24 @@ describe("milestone gating", () => {
 
   it("checkMilestoneCompletion marks M1 done and activates M2 when all M1 tasks complete (no contract)", () => {
     setupMission([
-      { id: "M1", title: "Phase 1", description: "", status: "active", order: 1, created: "2026-01-01T00:00:00Z", updated: "2026-01-01T00:00:00Z" },
-      { id: "M2", title: "Phase 2", description: "", status: "locked", order: 2, created: "2026-01-01T00:00:00Z", updated: "2026-01-01T00:00:00Z" },
+      {
+        id: "M1",
+        title: "Phase 1",
+        description: "",
+        status: "active",
+        order: 1,
+        created: "2026-01-01T00:00:00Z",
+        updated: "2026-01-01T00:00:00Z",
+      },
+      {
+        id: "M2",
+        title: "Phase 2",
+        description: "",
+        status: "locked",
+        order: 2,
+        created: "2026-01-01T00:00:00Z",
+        updated: "2026-01-01T00:00:00Z",
+      },
     ]);
 
     const task1 = makeTask({ id: "001", milestone: "M1", status: "done", assignee: "Agent 1" });
@@ -1421,12 +1521,33 @@ describe("milestone gating", () => {
 
   it("checkMilestoneCompletion does not advance when tasks are still in progress", () => {
     setupMission([
-      { id: "M1", title: "Phase 1", description: "", status: "active", order: 1, created: "2026-01-01T00:00:00Z", updated: "2026-01-01T00:00:00Z" },
-      { id: "M2", title: "Phase 2", description: "", status: "locked", order: 2, created: "2026-01-01T00:00:00Z", updated: "2026-01-01T00:00:00Z" },
+      {
+        id: "M1",
+        title: "Phase 1",
+        description: "",
+        status: "active",
+        order: 1,
+        created: "2026-01-01T00:00:00Z",
+        updated: "2026-01-01T00:00:00Z",
+      },
+      {
+        id: "M2",
+        title: "Phase 2",
+        description: "",
+        status: "locked",
+        order: 2,
+        created: "2026-01-01T00:00:00Z",
+        updated: "2026-01-01T00:00:00Z",
+      },
     ]);
 
     const task1 = makeTask({ id: "001", milestone: "M1", status: "done", assignee: "Agent 1" });
-    const task2 = makeTask({ id: "002", milestone: "M1", status: "in-progress", assignee: "Agent 2" });
+    const task2 = makeTask({
+      id: "002",
+      milestone: "M1",
+      status: "in-progress",
+      assignee: "Agent 2",
+    });
     saveTask(tmpDir, task1);
     saveTask(tmpDir, task2);
 
@@ -1462,8 +1583,24 @@ describe("validation flow", () => {
 
   it("milestone completion triggers validating state when contract exists", () => {
     setupMission([
-      { id: "M1", title: "Phase 1", description: "", status: "active", order: 1, created: "2026-01-01T00:00:00Z", updated: "2026-01-01T00:00:00Z" },
-      { id: "M2", title: "Phase 2", description: "", status: "locked", order: 2, created: "2026-01-01T00:00:00Z", updated: "2026-01-01T00:00:00Z" },
+      {
+        id: "M1",
+        title: "Phase 1",
+        description: "",
+        status: "active",
+        order: 1,
+        created: "2026-01-01T00:00:00Z",
+        updated: "2026-01-01T00:00:00Z",
+      },
+      {
+        id: "M2",
+        title: "Phase 2",
+        description: "",
+        status: "locked",
+        order: 2,
+        created: "2026-01-01T00:00:00Z",
+        updated: "2026-01-01T00:00:00Z",
+      },
     ]);
     writeContract("# Assertions\n- A1: Auth works\n- A2: Tests pass");
 
@@ -1472,7 +1609,13 @@ describe("validation flow", () => {
     saveTask(tmpDir, task1);
     saveTask(tmpDir, task2);
 
-    const validatorPane = makePane({ id: "%3", index: 2, title: "Validator", currentCommand: "zsh", role: "validator" });
+    const validatorPane = makePane({
+      id: "%3",
+      index: 2,
+      title: "Validator",
+      currentCommand: "zsh",
+      role: "validator",
+    });
     mockPanes = [validatorPane];
 
     const config = makeOrchestratorConfig(tmpDir, { dispatchMode: "missions", masterPane: null });
@@ -1502,8 +1645,24 @@ describe("validation flow", () => {
 
   it("all assertions passing marks milestone done and activates next", () => {
     setupMission([
-      { id: "M1", title: "Phase 1", description: "", status: "validating", order: 1, created: "2026-01-01T00:00:00Z", updated: "2026-01-01T00:00:00Z" },
-      { id: "M2", title: "Phase 2", description: "", status: "locked", order: 2, created: "2026-01-01T00:00:00Z", updated: "2026-01-01T00:00:00Z" },
+      {
+        id: "M1",
+        title: "Phase 1",
+        description: "",
+        status: "validating",
+        order: 1,
+        created: "2026-01-01T00:00:00Z",
+        updated: "2026-01-01T00:00:00Z",
+      },
+      {
+        id: "M2",
+        title: "Phase 2",
+        description: "",
+        status: "locked",
+        order: 2,
+        created: "2026-01-01T00:00:00Z",
+        updated: "2026-01-01T00:00:00Z",
+      },
     ]);
 
     const task1 = makeTask({ id: "001", milestone: "M1", status: "done", fulfills: ["A1"] });
@@ -1514,8 +1673,20 @@ describe("validation flow", () => {
     // All assertions passing
     saveValidationState(tmpDir, {
       assertions: {
-        A1: { status: "passing", verifiedBy: "Validator", verifiedAt: "2026-01-01T00:00:00Z", evidence: "works", blockedBy: null },
-        A2: { status: "passing", verifiedBy: "Validator", verifiedAt: "2026-01-01T00:00:00Z", evidence: "tests pass", blockedBy: null },
+        A1: {
+          status: "passing",
+          verifiedBy: "Validator",
+          verifiedAt: "2026-01-01T00:00:00Z",
+          evidence: "works",
+          blockedBy: null,
+        },
+        A2: {
+          status: "passing",
+          verifiedBy: "Validator",
+          verifiedAt: "2026-01-01T00:00:00Z",
+          evidence: "tests pass",
+          blockedBy: null,
+        },
       },
       lastVerified: "2026-01-01T00:00:00Z",
     });
@@ -1535,8 +1706,24 @@ describe("validation flow", () => {
 
   it("zero-assertion milestone advances to done", () => {
     setupMission([
-      { id: "M1", title: "Phase 1", description: "", status: "validating", order: 1, created: "2026-01-01T00:00:00Z", updated: "2026-01-01T00:00:00Z" },
-      { id: "M2", title: "Phase 2", description: "", status: "locked", order: 2, created: "2026-01-01T00:00:00Z", updated: "2026-01-01T00:00:00Z" },
+      {
+        id: "M1",
+        title: "Phase 1",
+        description: "",
+        status: "validating",
+        order: 1,
+        created: "2026-01-01T00:00:00Z",
+        updated: "2026-01-01T00:00:00Z",
+      },
+      {
+        id: "M2",
+        title: "Phase 2",
+        description: "",
+        status: "locked",
+        order: 2,
+        created: "2026-01-01T00:00:00Z",
+        updated: "2026-01-01T00:00:00Z",
+      },
     ]);
 
     const task1 = makeTask({ id: "001", milestone: "M1", status: "done", fulfills: [] });
@@ -1553,7 +1740,15 @@ describe("validation flow", () => {
 
   it("failed assertion creates remediation task and resets milestone to active", () => {
     setupMission([
-      { id: "M1", title: "Phase 1", description: "", status: "validating", order: 1, created: "2026-01-01T00:00:00Z", updated: "2026-01-01T00:00:00Z" },
+      {
+        id: "M1",
+        title: "Phase 1",
+        description: "",
+        status: "validating",
+        order: 1,
+        created: "2026-01-01T00:00:00Z",
+        updated: "2026-01-01T00:00:00Z",
+      },
     ]);
 
     const task1 = makeTask({ id: "001", milestone: "M1", status: "done", fulfills: ["A1", "A2"] });
@@ -1561,8 +1756,20 @@ describe("validation flow", () => {
 
     saveValidationState(tmpDir, {
       assertions: {
-        A1: { status: "passing", verifiedBy: "V", verifiedAt: "2026-01-01T00:00:00Z", evidence: "ok", blockedBy: null },
-        A2: { status: "failing", verifiedBy: "V", verifiedAt: "2026-01-01T00:00:00Z", evidence: "auth broken", blockedBy: null },
+        A1: {
+          status: "passing",
+          verifiedBy: "V",
+          verifiedAt: "2026-01-01T00:00:00Z",
+          evidence: "ok",
+          blockedBy: null,
+        },
+        A2: {
+          status: "failing",
+          verifiedBy: "V",
+          verifiedAt: "2026-01-01T00:00:00Z",
+          evidence: "auth broken",
+          blockedBy: null,
+        },
       },
       lastVerified: "2026-01-01T00:00:00Z",
     });
@@ -1595,7 +1802,15 @@ describe("validation flow", () => {
 
   it("remediation skips missing assertion entries without crashing", () => {
     setupMission([
-      { id: "M1", title: "Phase 1", description: "", status: "validating", order: 1, created: "2026-01-01T00:00:00Z", updated: "2026-01-01T00:00:00Z" },
+      {
+        id: "M1",
+        title: "Phase 1",
+        description: "",
+        status: "validating",
+        order: 1,
+        created: "2026-01-01T00:00:00Z",
+        updated: "2026-01-01T00:00:00Z",
+      },
     ]);
 
     const task1 = makeTask({ id: "001", milestone: "M1", status: "done", fulfills: ["A1", "A2"] });
@@ -1604,7 +1819,13 @@ describe("validation flow", () => {
       join(tmpDir, ".tasks", "validation-state.json"),
       JSON.stringify({
         assertions: {
-          A1: { status: "failing", verifiedBy: "V", verifiedAt: "2026-01-01T00:00:00Z", evidence: "broken", blockedBy: null },
+          A1: {
+            status: "failing",
+            verifiedBy: "V",
+            verifiedAt: "2026-01-01T00:00:00Z",
+            evidence: "broken",
+            blockedBy: null,
+          },
           A2: null,
         },
         lastVerified: "2026-01-01T00:00:00Z",
@@ -1618,9 +1839,23 @@ describe("validation flow", () => {
   it("buildValidationPrompt includes contract and task details", () => {
     writeContract("# Assertions\n- A1: Auth endpoint returns 200");
 
-    const milestone = { id: "M1", title: "Phase 1", description: "", status: "validating" as const, order: 1, created: "2026-01-01T00:00:00Z", updated: "2026-01-01T00:00:00Z" };
+    const milestone = {
+      id: "M1",
+      title: "Phase 1",
+      description: "",
+      status: "validating" as const,
+      order: 1,
+      created: "2026-01-01T00:00:00Z",
+      updated: "2026-01-01T00:00:00Z",
+    };
     const tasks = [
-      makeTask({ id: "001", title: "Fix auth", fulfills: ["A1"], proof: { notes: "done" }, salientSummary: "Patched JWT" }),
+      makeTask({
+        id: "001",
+        title: "Fix auth",
+        fulfills: ["A1"],
+        proof: { notes: "done" },
+        salientSummary: "Patched JWT",
+      }),
     ];
 
     const prompt = buildValidationPrompt(tmpDir, milestone, tasks);
@@ -1695,7 +1930,15 @@ describe("rich dispatch prompts", () => {
       status: "active",
       branch: null,
       milestones: [
-        { id: "M1", title: "Foundation", description: "Core infra setup", status: "active", order: 1, created: "2026-01-01T00:00:00Z", updated: "2026-01-01T00:00:00Z" },
+        {
+          id: "M1",
+          title: "Foundation",
+          description: "Core infra setup",
+          status: "active",
+          order: 1,
+          created: "2026-01-01T00:00:00Z",
+          updated: "2026-01-01T00:00:00Z",
+        },
       ],
       created: "2026-01-01T00:00:00Z",
       updated: "2026-01-01T00:00:00Z",
@@ -1725,21 +1968,32 @@ describe("rich dispatch prompts", () => {
       status: "active",
       branch: null,
       milestones: [
-        { id: "M1", title: "Phase 1", description: "", status: "active", order: 1, created: "2026-01-01T00:00:00Z", updated: "2026-01-01T00:00:00Z" },
+        {
+          id: "M1",
+          title: "Phase 1",
+          description: "",
+          status: "active",
+          order: 1,
+          created: "2026-01-01T00:00:00Z",
+          updated: "2026-01-01T00:00:00Z",
+        },
       ],
       created: "2026-01-01T00:00:00Z",
       updated: "2026-01-01T00:00:00Z",
     });
 
     // Save a completed task in the same milestone
-    saveTask(tmpDir, makeTask({
-      id: "099",
-      title: "Setup database",
-      milestone: "M1",
-      status: "done",
-      assignee: "Agent 1",
-      salientSummary: "Used Postgres with pgvector",
-    }));
+    saveTask(
+      tmpDir,
+      makeTask({
+        id: "099",
+        title: "Setup database",
+        milestone: "M1",
+        status: "done",
+        assignee: "Agent 1",
+        salientSummary: "Used Postgres with pgvector",
+      }),
+    );
 
     const task = makeTask({ id: "100", milestone: "M1" });
     const prompt = buildTaskPrompt(tmpDir, task);
@@ -1864,7 +2118,13 @@ describe("mission lifecycle", () => {
       updated: "2026-01-01T00:00:00Z",
     });
 
-    const leadPane = makePane({ id: "%0", index: 0, title: "Lead", currentCommand: "zsh", role: "lead" });
+    const leadPane = makePane({
+      id: "%0",
+      index: 0,
+      title: "Lead",
+      currentCommand: "zsh",
+      role: "lead",
+    });
     mockPanes = [leadPane];
 
     const config = makeOrchestratorConfig(tmpDir, { dispatchMode: "missions", masterPane: "Lead" });
@@ -1898,7 +2158,13 @@ describe("mission lifecycle", () => {
       updated: "2026-01-01T00:00:00Z",
     });
 
-    const leadPane = makePane({ id: "%0", index: 0, title: "Lead", currentCommand: "zsh", role: "lead" });
+    const leadPane = makePane({
+      id: "%0",
+      index: 0,
+      title: "Lead",
+      currentCommand: "zsh",
+      role: "lead",
+    });
     mockPanes = [leadPane];
 
     const config = makeOrchestratorConfig(tmpDir, { dispatchMode: "missions" });
@@ -1965,7 +2231,15 @@ describe("mission lifecycle", () => {
       status: "active" as const,
       branch: null,
       milestones: [
-        { id: "M1", title: "Phase 1", description: "", status: "done" as const, order: 1, created: "2026-01-01T00:00:00Z", updated: "2026-01-01T00:00:00Z" },
+        {
+          id: "M1",
+          title: "Phase 1",
+          description: "",
+          status: "done" as const,
+          order: 1,
+          created: "2026-01-01T00:00:00Z",
+          updated: "2026-01-01T00:00:00Z",
+        },
       ],
       created: "2026-01-01T00:00:00Z",
       updated: "2026-01-01T00:00:00Z",
@@ -1992,7 +2266,9 @@ describe("mission lifecycle", () => {
     expect(missionEvent!.message.includes("Ship v2")).toBeTruthy();
 
     // Master pane should be notified
-    const sendCalls = tmuxCalls.filter((c) => c.args.includes("send-keys") && c.args.includes("%0"));
+    const sendCalls = tmuxCalls.filter(
+      (c) => c.args.includes("send-keys") && c.args.includes("%0"),
+    );
     expect(sendCalls.length).toBeGreaterThan(0);
   });
 
@@ -2003,7 +2279,15 @@ describe("mission lifecycle", () => {
       status: "active" as const,
       branch: null,
       milestones: [
-        { id: "M1", title: "Phase 1", description: "", status: "active" as const, order: 1, created: "2026-01-01T00:00:00Z", updated: "2026-01-01T00:00:00Z" },
+        {
+          id: "M1",
+          title: "Phase 1",
+          description: "",
+          status: "active" as const,
+          order: 1,
+          created: "2026-01-01T00:00:00Z",
+          updated: "2026-01-01T00:00:00Z",
+        },
       ],
       created: "2026-01-01T00:00:00Z",
       updated: "2026-01-01T00:00:00Z",

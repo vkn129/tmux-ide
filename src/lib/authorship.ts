@@ -278,23 +278,3 @@ export function tagContent(markdown: string, by: string): string {
   const doc: MarksDocument = { version: 2, marks: newMarks };
   return embedMarks(content, doc);
 }
-
-// ============================================================================
-// Backward compatibility — re-export old names
-// ============================================================================
-
-/** @deprecated Use extractMarks instead */
-export function extractAuthorship(markdown: string): {
-  content: string;
-  authorship: { marks: Record<string, Mark>; stats: AuthorshipStats } | null;
-} {
-  const { content, marks } = extractMarks(markdown);
-  if (!marks) return { content, authorship: null };
-  const stats = calculateStats(marks.marks);
-  return { content, authorship: { marks: marks.marks, stats } };
-}
-
-/** @deprecated Use tagContent instead */
-export function tagAuthorship(markdown: string, author: string): string {
-  return tagContent(markdown, author);
-}

@@ -199,7 +199,9 @@ export function TaskDetail(props: TaskDetailProps) {
       </Show>
 
       {/* Milestone + specialty + fulfills + tags */}
-      <Show when={t().milestone || t().specialty || t().fulfills?.length > 0 || t().tags.length > 0}>
+      <Show
+        when={t().milestone || t().specialty || t().fulfills?.length > 0 || t().tags.length > 0}
+      >
         <box flexShrink={0} flexDirection="row" gap={2}>
           <Show when={t().milestone}>
             <text fg={toRGBA(theme.diffHunk)}>{t().milestone}</text>

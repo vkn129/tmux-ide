@@ -198,11 +198,7 @@ function loadLibraryExcerpt(filePath: string, maxChars = 500): string | null {
   }
 }
 
-export function buildTaskPrompt(
-  dir: string,
-  task: Task,
-  config?: OrchestratorConfig,
-): string {
+export function buildTaskPrompt(dir: string, task: Task, config?: OrchestratorConfig): string {
   let prompt = "";
 
   // 1. Mission narrative
@@ -345,9 +341,7 @@ export function isMilestoneReady(dir: string, milestoneId: string): boolean {
   if (!mission) return false;
   const target = mission.milestones.find((m) => m.id === milestoneId);
   if (!target) return false;
-  return mission.milestones
-    .filter((m) => m.order < target.order)
-    .every((m) => m.status === "done");
+  return mission.milestones.filter((m) => m.order < target.order).every((m) => m.status === "done");
 }
 
 /**
@@ -777,11 +771,7 @@ export function dispatchPlanning(
   const dispatchFile = join(dispatchDir, "planning.md");
   writeFileSync(dispatchFile, prompt);
 
-  sendCommand(
-    config.session,
-    plannerPane.id,
-    `Read and execute: .tasks/dispatch/planning.md`,
-  );
+  sendCommand(config.session, plannerPane.id, `Read and execute: .tasks/dispatch/planning.md`);
 
   appendEvent(config.dir, {
     timestamp: new Date().toISOString(),
@@ -833,8 +823,7 @@ export function handleMissionComplete(
 
   if (config.masterPane) {
     const masterPane =
-      panes.find((p) => p.role === "lead") ??
-      panes.find((p) => p.title === config.masterPane);
+      panes.find((p) => p.role === "lead") ?? panes.find((p) => p.title === config.masterPane);
     if (masterPane) {
       sendCommand(
         config.session,
@@ -917,7 +906,10 @@ export function dispatch(
           if (!allDepsDone) return false;
         }
         // Milestone gating (missions mode only)
-        if (config.dispatchMode === "missions" && !isTaskMilestoneEligible(config.dir, t, mission)) {
+        if (
+          config.dispatchMode === "missions" &&
+          !isTaskMilestoneEligible(config.dir, t, mission)
+        ) {
           return false;
         }
         return true;
@@ -1086,7 +1078,6 @@ function isPlannerPane(config: OrchestratorConfig, pane: PaneInfo): boolean {
   if (pane.role === "lead") return false;
   return isAgentPane(pane);
 }
-
 
 export function buildGoalPrompt(dir: string, goal: Goal, planner: PaneInfo): string {
   const mission = loadMission(dir);

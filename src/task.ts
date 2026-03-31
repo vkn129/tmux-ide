@@ -202,7 +202,9 @@ function handleMission(
         console.log(`Mission "${mission.title}" planning complete — now active`);
         if (first) console.log(`  Activated milestone: ${first.id} — ${first.title}`);
         if (unclaimed.length > 0) {
-          console.log(`  Warning: ${unclaimed.length} assertion(s) not claimed by any task: ${unclaimed.join(", ")}`);
+          console.log(
+            `  Warning: ${unclaimed.length} assertion(s) not claimed by any task: ${unclaimed.join(", ")}`,
+          );
         }
       }
       break;
@@ -232,19 +234,27 @@ function handleMission(
       const failingCount = assertions.filter((a) => a.status === "failing").length;
       const pendingCount = assertions.filter((a) => a.status === "pending").length;
       if (json) {
-        console.log(JSON.stringify({
-          title: mission.title,
-          status: mission.status,
-          milestones: { done: doneMilestones, total: totalMilestones },
-          tasks: { done: doneTasks, total: totalTasks },
-          validation: { passing: passingCount, failing: failingCount, pending: pendingCount },
-        }, null, 2));
+        console.log(
+          JSON.stringify(
+            {
+              title: mission.title,
+              status: mission.status,
+              milestones: { done: doneMilestones, total: totalMilestones },
+              tasks: { done: doneTasks, total: totalTasks },
+              validation: { passing: passingCount, failing: failingCount, pending: pendingCount },
+            },
+            null,
+            2,
+          ),
+        );
       } else {
         console.log(`Mission: ${mission.title} [${mission.status}]`);
         console.log(`  Milestones: ${doneMilestones}/${totalMilestones} done`);
         console.log(`  Tasks: ${doneTasks}/${totalTasks} done`);
         if (assertions.length > 0) {
-          console.log(`  Validation: ${passingCount} passing, ${failingCount} failing, ${pendingCount} pending`);
+          console.log(
+            `  Validation: ${passingCount} passing, ${failingCount} failing, ${pendingCount} pending`,
+          );
         }
       }
       break;
@@ -293,7 +303,7 @@ function handleMilestone(
       const mission = loadMission(dir);
       if (!mission)
         outputError('No mission set. Run: tmux-ide mission set "..." first', "NOT_FOUND");
-      const sequence = parseInt(values.sequence ?? "0", 10) || (mission.milestones.length + 1);
+      const sequence = parseInt(values.sequence ?? "0", 10) || mission.milestones.length + 1;
       const id = `M${sequence}`;
       // Check for duplicate ID
       if (mission.milestones.find((m) => m.id === id)) {
@@ -469,7 +479,9 @@ function handleValidation(
       if (json) {
         console.log(JSON.stringify({ assertionId, ...state.assertions[assertionId] }, null, 2));
       } else {
-        console.log(`Assertion ${assertionId}: ${status}${values.evidence ? ` — ${values.evidence}` : ""}`);
+        console.log(
+          `Assertion ${assertionId}: ${status}${values.evidence ? ` — ${values.evidence}` : ""}`,
+        );
       }
       break;
     }
@@ -508,12 +520,18 @@ function handleValidation(
       const allIds = contract ? parseAssertionIds(contract) : [];
       const claimed = allIds.length - result.unclaimed.length;
       if (json) {
-        console.log(JSON.stringify({
-          total: allIds.length,
-          claimed,
-          unclaimed: result.unclaimed,
-          duplicates: result.duplicates,
-        }, null, 2));
+        console.log(
+          JSON.stringify(
+            {
+              total: allIds.length,
+              claimed,
+              unclaimed: result.unclaimed,
+              duplicates: result.duplicates,
+            },
+            null,
+            2,
+          ),
+        );
       } else {
         console.log(`Assertion Coverage: ${claimed}/${allIds.length} claimed`);
         if (result.unclaimed.length > 0) {

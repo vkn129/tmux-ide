@@ -268,6 +268,7 @@ if (isMainModule) {
             maxConcurrentAgents: orch.max_concurrent_agents ?? 10,
             dispatchMode: orch.dispatch_mode ?? "tasks",
             paneSpecialties,
+            services: orch.services ?? {},
           });
         } catch {
           // Orchestrator module not available yet

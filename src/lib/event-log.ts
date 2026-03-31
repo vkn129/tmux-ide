@@ -114,15 +114,15 @@ export function formatEventMessage(event: StructuredEvent): string {
         ? `Dispatched mission planning to ${event.target}`
         : "Dispatched mission planning";
     case "mission_complete":
-      return event.title
-        ? `Mission "${event.title}" completed`
-        : "Mission completed";
+      return event.title ? `Mission "${event.title}" completed` : "Mission completed";
     case "discovered_issue":
       return event.issue
         ? `Created follow-up task ${event.taskId}: ${event.issue}`
         : `Created follow-up task ${event.taskId} for discovered issue`;
     default:
-      return (event as { message?: string }).message ?? `Event: ${(event as { type: string }).type}`;
+      return (
+        (event as { message?: string }).message ?? `Event: ${(event as { type: string }).type}`
+      );
   }
 }
 

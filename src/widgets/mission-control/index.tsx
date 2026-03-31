@@ -135,11 +135,13 @@ render(
     const milestoneRows = createMemo(() => {
       const m = mission();
       if (!m || m.milestones.length === 0) return [];
-      return [...m.milestones].sort((a, b) => a.order - b.order).map((ms) => {
-        const mTasks = tasks().filter((t) => t.milestone === ms.id);
-        const done = mTasks.filter((t) => t.status === "done").length;
-        return { ...ms, done, total: mTasks.length };
-      });
+      return [...m.milestones]
+        .sort((a, b) => a.order - b.order)
+        .map((ms) => {
+          const mTasks = tasks().filter((t) => t.milestone === ms.id);
+          const done = mTasks.filter((t) => t.status === "done").length;
+          return { ...ms, done, total: mTasks.length };
+        });
     });
 
     const valSummary = createMemo(() => {

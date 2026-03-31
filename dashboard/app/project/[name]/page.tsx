@@ -255,9 +255,7 @@ export default function ProjectPage() {
 
       {activeTab === "plans" && <PlansPanel sessionName={project.session} />}
 
-      {activeTab === "validation" && (
-        <ValidationTab sessionName={project.session} />
-      )}
+      {activeTab === "validation" && <ValidationTab sessionName={project.session} />}
 
       {activeTab === "activity" && <ActivityFeed events={events ?? []} />}
 
@@ -295,16 +293,10 @@ function ValidationTab({ sessionName }: { sessionName: string }) {
   const { data: coverage } = usePolling(covFetcher, 5000);
 
   if (!validation) {
-    return (
-      <div className="flex-1 p-4 text-[var(--dim)]">
-        no validation contract found
-      </div>
-    );
+    return <div className="flex-1 p-4 text-[var(--dim)]">no validation contract found</div>;
   }
 
-  const assertions = validation.state
-    ? Object.entries(validation.state.assertions)
-    : [];
+  const assertions = validation.state ? Object.entries(validation.state.assertions) : [];
 
   return (
     <div className="flex-1 p-4 overflow-auto space-y-4">
@@ -322,10 +314,7 @@ function ValidationTab({ sessionName }: { sessionName: string }) {
           <h3 className="text-[var(--accent)] mb-1">assertions</h3>
           <div className="space-y-px">
             {assertions.map(([id, entry]) => (
-              <div
-                key={id}
-                className="flex items-center gap-2 px-2 py-0.5 bg-[var(--surface)]"
-              >
+              <div key={id} className="flex items-center gap-2 px-2 py-0.5 bg-[var(--surface)]">
                 <span className="text-[var(--fg)] w-32 shrink-0">{id}</span>
                 <span
                   style={{ color: STATUS_COLORS[entry.status] ?? "var(--dim)" }}
@@ -334,14 +323,10 @@ function ValidationTab({ sessionName }: { sessionName: string }) {
                   {entry.status}
                 </span>
                 {entry.verifiedBy && (
-                  <span className="text-[var(--cyan)] text-[11px]">
-                    @{entry.verifiedBy}
-                  </span>
+                  <span className="text-[var(--cyan)] text-[11px]">@{entry.verifiedBy}</span>
                 )}
                 {entry.evidence && (
-                  <span className="text-[var(--dim)] text-[11px] truncate">
-                    {entry.evidence}
-                  </span>
+                  <span className="text-[var(--dim)] text-[11px] truncate">{entry.evidence}</span>
                 )}
               </div>
             ))}
@@ -349,21 +334,22 @@ function ValidationTab({ sessionName }: { sessionName: string }) {
         </div>
       )}
 
-      {coverage && (coverage.unclaimed.length > 0 || Object.keys(coverage.duplicates).length > 0) && (
-        <div>
-          <h3 className="text-[var(--accent)] mb-1">coverage</h3>
-          {coverage.unclaimed.length > 0 && (
-            <div className="text-[var(--yellow)] text-[12px]">
-              unclaimed: {coverage.unclaimed.join(", ")}
-            </div>
-          )}
-          {Object.entries(coverage.duplicates).map(([id, taskIds]) => (
-            <div key={id} className="text-[var(--dim)] text-[12px]">
-              {id}: claimed by tasks {taskIds.join(", ")}
-            </div>
-          ))}
-        </div>
-      )}
+      {coverage &&
+        (coverage.unclaimed.length > 0 || Object.keys(coverage.duplicates).length > 0) && (
+          <div>
+            <h3 className="text-[var(--accent)] mb-1">coverage</h3>
+            {coverage.unclaimed.length > 0 && (
+              <div className="text-[var(--yellow)] text-[12px]">
+                unclaimed: {coverage.unclaimed.join(", ")}
+              </div>
+            )}
+            {Object.entries(coverage.duplicates).map(([id, taskIds]) => (
+              <div key={id} className="text-[var(--dim)] text-[12px]">
+                {id}: claimed by tasks {taskIds.join(", ")}
+              </div>
+            ))}
+          </div>
+        )}
     </div>
   );
 }

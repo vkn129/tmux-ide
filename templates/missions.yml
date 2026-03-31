@@ -1,0 +1,36 @@
+name: project-name
+
+team:
+  name: missions
+
+rows:
+  - size: 70%
+    panes:
+      - title: Lead
+        command: claude
+        role: lead
+        focus: true
+      - title: Frontend
+        command: claude
+        role: teammate
+        specialty: frontend
+      - title: Backend
+        command: claude
+        role: teammate
+        specialty: backend
+
+  - size: 30%
+    panes:
+      - title: Validator
+        command: claude
+        role: validator
+        skill: reviewer
+      - title: Shell
+
+orchestrator:
+  enabled: true
+  auto_dispatch: true
+  dispatch_mode: missions
+  poll_interval: 5000
+  stall_timeout: 300000
+  master_pane: Lead

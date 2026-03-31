@@ -100,9 +100,33 @@ describe("mission", () => {
       status: "planning",
       branch: null,
       milestones: [
-        { id: "M1", title: "First", description: "", status: "active", order: 1, created: "2026-01-01T00:00:00Z", updated: "2026-01-01T00:00:00Z" },
-        { id: "M2", title: "Second", description: "", status: "active", order: 2, created: "2026-01-01T00:00:00Z", updated: "2026-01-01T00:00:00Z" },
-        { id: "M3", title: "Third", description: "", status: "done", order: 3, created: "2026-01-01T00:00:00Z", updated: "2026-01-01T00:00:00Z" },
+        {
+          id: "M1",
+          title: "First",
+          description: "",
+          status: "active",
+          order: 1,
+          created: "2026-01-01T00:00:00Z",
+          updated: "2026-01-01T00:00:00Z",
+        },
+        {
+          id: "M2",
+          title: "Second",
+          description: "",
+          status: "active",
+          order: 2,
+          created: "2026-01-01T00:00:00Z",
+          updated: "2026-01-01T00:00:00Z",
+        },
+        {
+          id: "M3",
+          title: "Third",
+          description: "",
+          status: "done",
+          order: 3,
+          created: "2026-01-01T00:00:00Z",
+          updated: "2026-01-01T00:00:00Z",
+        },
       ],
       created: "2026-01-01T00:00:00Z",
       updated: "2026-01-01T00:00:00Z",
@@ -557,7 +581,7 @@ describe("tasks", () => {
         priority: 1,
         created: "2026-01-01T00:00:00Z",
         updated: "2026-01-01T00:00:00Z",
-  
+
         tags: [],
         proof: null,
       }) + "\n",
@@ -582,7 +606,7 @@ describe("tasks", () => {
           priority: 1,
           created: "2026-01-01T00:00:00Z",
           updated: "2026-01-01T00:00:00Z",
-    
+
           tags: [],
           proof: null,
         }) + "\n",
@@ -728,7 +752,7 @@ describe("parseProof", () => {
         priority: 1,
         created: "2026-01-01T00:00:00Z",
         updated: "2026-01-01T00:00:00Z",
-  
+
         tags: [],
         proof: { note: "old format proof" },
       }) + "\n",
@@ -963,7 +987,7 @@ describe("schema version", () => {
         priority: 1,
         created: "2026-01-01T00:00:00Z",
         updated: "2026-01-01T00:00:00Z",
-  
+
         tags: [],
         proof: null,
       }) + "\n",
@@ -991,7 +1015,7 @@ describe("corrupted file resilience", () => {
         priority: 1,
         created: "2026-01-01T00:00:00Z",
         updated: "2026-01-01T00:00:00Z",
-  
+
         tags: [],
         proof: null,
       }) + "\n",
@@ -1064,7 +1088,7 @@ describe("corrupted file resilience", () => {
         priority: 1,
         created: "2026-01-01T00:00:00Z",
         updated: "2026-01-01T00:00:00Z",
-  
+
         tags: [],
         proof: null,
       }) + "\n",

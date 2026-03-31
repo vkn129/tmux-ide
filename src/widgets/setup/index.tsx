@@ -55,12 +55,7 @@ function inferFieldType(path: string[]): { type: FieldType; enumValues?: string[
       enumValues: ["explorer", "changes", "preview", "tasks", "costs", "config", "mission-control"],
     };
   if (last === "dispatch_mode") return { type: "enum", enumValues: ["tasks", "goals"] };
-  if (
-    last === "focus" ||
-    last === "enabled" ||
-    last === "auto_dispatch" ||
-    last === "widgets"
-  )
+  if (last === "focus" || last === "enabled" || last === "auto_dispatch" || last === "widgets")
     return { type: "boolean" };
   if (last === "size") return { type: "size" };
   return { type: "string" };

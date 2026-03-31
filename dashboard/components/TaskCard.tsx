@@ -58,12 +58,8 @@ export function TaskCard({ task: t, onClick, selected = false }: TaskCardProps) 
         {t.proof?.pr && (
           <span className="text-[var(--cyan)] text-[10px]">PR#{t.proof.pr.number}</span>
         )}
-        {t.milestone && (
-          <span className="text-[var(--magenta)] text-[10px]">{t.milestone}</span>
-        )}
-        {t.specialty && (
-          <span className="text-[var(--cyan)] text-[10px]">{t.specialty}</span>
-        )}
+        {t.milestone && <span className="text-[var(--magenta)] text-[10px]">{t.milestone}</span>}
+        {t.specialty && <span className="text-[var(--cyan)] text-[10px]">{t.specialty}</span>}
         {t.fulfills?.length > 0 && (
           <span className="text-[var(--yellow)] text-[10px]" title={t.fulfills.join(", ")}>
             ✓{t.fulfills.length}

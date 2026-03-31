@@ -45,8 +45,20 @@ describe("loadValidationState / saveValidationState", () => {
   it("round-trips state", () => {
     const state: ValidationState = {
       assertions: {
-        A1: { status: "passing", verifiedBy: "agent-1", verifiedAt: "2026-01-01T00:00:00Z", evidence: "tests pass", blockedBy: null },
-        A2: { status: "failing", verifiedBy: null, verifiedAt: null, evidence: null, blockedBy: null },
+        A1: {
+          status: "passing",
+          verifiedBy: "agent-1",
+          verifiedAt: "2026-01-01T00:00:00Z",
+          evidence: "tests pass",
+          blockedBy: null,
+        },
+        A2: {
+          status: "failing",
+          verifiedBy: null,
+          verifiedAt: null,
+          evidence: null,
+          blockedBy: null,
+        },
       },
       lastVerified: "2026-01-01T00:00:00Z",
     };
@@ -65,8 +77,20 @@ describe("isAllPassing", () => {
   it("returns true when all assertions pass", () => {
     const state: ValidationState = {
       assertions: {
-        A1: { status: "passing", verifiedBy: null, verifiedAt: null, evidence: null, blockedBy: null },
-        A2: { status: "passing", verifiedBy: null, verifiedAt: null, evidence: null, blockedBy: null },
+        A1: {
+          status: "passing",
+          verifiedBy: null,
+          verifiedAt: null,
+          evidence: null,
+          blockedBy: null,
+        },
+        A2: {
+          status: "passing",
+          verifiedBy: null,
+          verifiedAt: null,
+          evidence: null,
+          blockedBy: null,
+        },
       },
       lastVerified: null,
     };
@@ -76,8 +100,20 @@ describe("isAllPassing", () => {
   it("returns false when any assertion is not passing", () => {
     const state: ValidationState = {
       assertions: {
-        A1: { status: "passing", verifiedBy: null, verifiedAt: null, evidence: null, blockedBy: null },
-        A2: { status: "pending", verifiedBy: null, verifiedAt: null, evidence: null, blockedBy: null },
+        A1: {
+          status: "passing",
+          verifiedBy: null,
+          verifiedAt: null,
+          evidence: null,
+          blockedBy: null,
+        },
+        A2: {
+          status: "pending",
+          verifiedBy: null,
+          verifiedAt: null,
+          evidence: null,
+          blockedBy: null,
+        },
       },
       lastVerified: null,
     };
@@ -93,9 +129,27 @@ describe("getFailedAssertions", () => {
   it("returns IDs of failing assertions", () => {
     const state: ValidationState = {
       assertions: {
-        A1: { status: "passing", verifiedBy: null, verifiedAt: null, evidence: null, blockedBy: null },
-        A2: { status: "failing", verifiedBy: null, verifiedAt: null, evidence: null, blockedBy: null },
-        A3: { status: "failing", verifiedBy: null, verifiedAt: null, evidence: null, blockedBy: null },
+        A1: {
+          status: "passing",
+          verifiedBy: null,
+          verifiedAt: null,
+          evidence: null,
+          blockedBy: null,
+        },
+        A2: {
+          status: "failing",
+          verifiedBy: null,
+          verifiedAt: null,
+          evidence: null,
+          blockedBy: null,
+        },
+        A3: {
+          status: "failing",
+          verifiedBy: null,
+          verifiedAt: null,
+          evidence: null,
+          blockedBy: null,
+        },
       },
       lastVerified: null,
     };
@@ -105,7 +159,13 @@ describe("getFailedAssertions", () => {
   it("returns empty array when no failures", () => {
     const state: ValidationState = {
       assertions: {
-        A1: { status: "passing", verifiedBy: null, verifiedAt: null, evidence: null, blockedBy: null },
+        A1: {
+          status: "passing",
+          verifiedBy: null,
+          verifiedAt: null,
+          evidence: null,
+          blockedBy: null,
+        },
       },
       lastVerified: null,
     };
@@ -115,8 +175,20 @@ describe("getFailedAssertions", () => {
   it("includes blocked assertions", () => {
     const state: ValidationState = {
       assertions: {
-        A1: { status: "passing", verifiedBy: null, verifiedAt: null, evidence: null, blockedBy: null },
-        A2: { status: "blocked", verifiedBy: null, verifiedAt: null, evidence: null, blockedBy: "needs infra" },
+        A1: {
+          status: "passing",
+          verifiedBy: null,
+          verifiedAt: null,
+          evidence: null,
+          blockedBy: null,
+        },
+        A2: {
+          status: "blocked",
+          verifiedBy: null,
+          verifiedAt: null,
+          evidence: null,
+          blockedBy: "needs infra",
+        },
       },
       lastVerified: null,
     };
@@ -128,8 +200,20 @@ describe("blocked assertion status", () => {
   it("isAllPassing returns false when assertion is blocked", () => {
     const state: ValidationState = {
       assertions: {
-        A1: { status: "passing", verifiedBy: null, verifiedAt: null, evidence: null, blockedBy: null },
-        A2: { status: "blocked", verifiedBy: null, verifiedAt: null, evidence: null, blockedBy: "depends on deploy" },
+        A1: {
+          status: "passing",
+          verifiedBy: null,
+          verifiedAt: null,
+          evidence: null,
+          blockedBy: null,
+        },
+        A2: {
+          status: "blocked",
+          verifiedBy: null,
+          verifiedAt: null,
+          evidence: null,
+          blockedBy: "depends on deploy",
+        },
       },
       lastVerified: null,
     };
@@ -174,10 +258,7 @@ describe("checkCoverage", () => {
 
   it("reports duplicate claims", () => {
     ensureTasksDir(tmpDir);
-    writeFileSync(
-      join(tmpDir, ".tasks", "validation-contract.md"),
-      "**ASSERT01**: Auth",
-    );
+    writeFileSync(join(tmpDir, ".tasks", "validation-contract.md"), "**ASSERT01**: Auth");
     saveTask(tmpDir, makeTask({ id: "001", fulfills: ["ASSERT01"] }));
     saveTask(tmpDir, makeTask({ id: "002", title: "Other", fulfills: ["ASSERT01"] }));
 

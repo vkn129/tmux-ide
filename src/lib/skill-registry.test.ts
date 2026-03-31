@@ -40,7 +40,9 @@ You are a frontend developer. Focus on React components and CSS.
     expect(skills[0]!.specialties).toEqual(["react", "css", "typescript"]);
     expect(skills[0]!.role).toBe("teammate");
     expect(skills[0]!.description).toBe("Frontend component specialist");
-    expect(skills[0]!.body).toBe("You are a frontend developer. Focus on React components and CSS.");
+    expect(skills[0]!.body).toBe(
+      "You are a frontend developer. Focus on React components and CSS.",
+    );
   });
 
   it("loads multiple skills", () => {

@@ -167,13 +167,7 @@ function tick(): void {
         const curr = agentStates.get(pane.id);
         if (prev === "busy" && curr === "idle" && pane.id !== masterPane.id) {
           const label = pane.name ?? pane.title ?? pane.id;
-          tmuxSilent(
-            "send-keys",
-            "-t",
-            masterPane.id,
-            `Agent "${label}" is now idle`,
-            "Enter",
-          );
+          tmuxSilent("send-keys", "-t", masterPane.id, `Agent "${label}" is now idle`, "Enter");
         }
       }
     }
@@ -240,7 +234,11 @@ async function startOrchestrator(): Promise<void> {
         maxConcurrentAgents: orch.max_concurrent_agents ?? 10,
         dispatchMode: orch.dispatch_mode ?? "tasks",
         paneSpecialties,
-        services: (orch.services as Record<string, { command: string; port?: number; healthcheck?: string }>) ?? {},
+        services:
+          (orch.services as Record<
+            string,
+            { command: string; port?: number; healthcheck?: string }
+          >) ?? {},
       });
     } catch {
       // Orchestrator module not available yet

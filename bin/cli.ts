@@ -241,7 +241,13 @@ try {
 
     case "validate": {
       const valSub = positionals[1];
-      if (valSub === "assert" || valSub === "show" || valSub === "report" || valSub === "coverage" || valSub === "help") {
+      if (
+        valSub === "assert" ||
+        valSub === "show" ||
+        valSub === "report" ||
+        valSub === "coverage" ||
+        valSub === "help"
+      ) {
         await taskCommand(null, {
           json,
           action: "validate",

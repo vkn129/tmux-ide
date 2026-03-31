@@ -313,7 +313,7 @@ describe("depends_on", () => {
         priority: 1,
         created: "2026-01-01T00:00:00Z",
         updated: "2026-01-01T00:00:00Z",
-    
+
         tags: [],
         proof: null,
         depends_on: ["002", "003"],
@@ -423,7 +423,7 @@ describe("CLI interop", () => {
       priority: 1,
       created: "2026-01-01T00:00:00Z",
       updated: "2026-01-01T00:00:00Z",
-  
+
       tags: ["test"],
       proof: null,
       retryCount: 0,
@@ -453,7 +453,7 @@ describe("CLI interop", () => {
       priority: 1,
       created: "2026-01-01T00:00:00Z",
       updated: "2026-01-01T00:00:00Z",
-  
+
       tags: [],
       proof: null,
       retryCount: 0,

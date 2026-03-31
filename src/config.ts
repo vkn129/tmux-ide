@@ -36,7 +36,9 @@ function withConfig<T>(dir: string, mutator: (cfg: IdeConfig) => T): T | undefin
 
   const validation = IdeConfigSchema.safeParse(cfg);
   if (!validation.success) {
-    const issues = validation.error.issues.map((i) => `  ${i.path.join(".")}: ${i.message}`).join("\n");
+    const issues = validation.error.issues
+      .map((i) => `  ${i.path.join(".")}: ${i.message}`)
+      .join("\n");
     outputError(`Invalid config after mutation:\n${issues}`, "INVALID_CONFIG");
     return;
   }
