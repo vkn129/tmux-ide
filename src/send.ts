@@ -1,4 +1,5 @@
-import { resolve } from "node:path";
+import { resolve, join } from "node:path";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { getSessionName } from "./lib/yaml-io.ts";
 import { getSessionState } from "./lib/tmux.ts";
 import {
@@ -11,6 +12,27 @@ import {
 } from "./widgets/lib/pane-comms.ts";
 import { appendEvent } from "./lib/event-log.ts";
 import { IdeError } from "./lib/errors.ts";
+
+export const LONG_MESSAGE_THRESHOLD = 150;
+
+/**
+ * Write a long message to a dispatch file and return the short trigger command.
+ * Returns null if message is short enough to send directly.
+ */
+export function writeDispatchFile(
+  dir: string,
+  paneId: string,
+  message: string,
+): { filePath: string; triggerCmd: string } | null {
+  if (message.length <= LONG_MESSAGE_THRESHOLD) return null;
+  const dispatchDir = join(dir, ".tasks", "dispatch");
+  if (!existsSync(dispatchDir)) mkdirSync(dispatchDir, { recursive: true });
+  const paneSlug = paneId.replace("%", "");
+  const filename = `send-${paneSlug}-${Date.now()}.md`;
+  const filePath = join(dispatchDir, filename);
+  writeFileSync(filePath, message);
+  return { filePath, triggerCmd: `Read and execute: .tasks/dispatch/${filename}` };
+}
 
 interface SendOptions {
   json?: boolean;
@@ -106,10 +128,17 @@ export async function send(targetDir: string | undefined, opts: SendOptions): Pr
   const busyStatus = getPaneBusyStatus(session, pane.id);
   const message = prepareMessage(rawMessage, busyStatus);
 
+  let sentViaFile = false;
   if (noEnter) {
     sendText(session, pane.id, message);
   } else {
-    sendCommand(session, pane.id, message);
+    const dispatch = writeDispatchFile(dir, pane.id, message);
+    if (dispatch) {
+      sendCommand(session, pane.id, dispatch.triggerCmd);
+      sentViaFile = true;
+    } else {
+      sendCommand(session, pane.id, message);
+    }
   }
 
   // Log send event
@@ -132,6 +161,7 @@ export async function send(targetDir: string | undefined, opts: SendOptions): Pr
     },
     message,
     busyStatus,
+    sentViaFile,
     ...(busyStatus === "agent" ? { warning: "agent_busy" } : {}),
   };
 

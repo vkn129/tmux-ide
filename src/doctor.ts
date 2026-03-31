@@ -1,6 +1,8 @@
 import { execSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
+import { readConfig } from "./lib/yaml-io.ts";
+import { loadSkills } from "./lib/skill-registry.ts";
 
 interface CheckResult {
   label: string;
@@ -84,6 +86,32 @@ export async function doctor({ json }: { json?: boolean } = {}): Promise<void> {
           throw new Error("not set (enable with CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1)");
         }
         return "enabled";
+      },
+      { optional: true },
+    ),
+  );
+
+  checks.push(
+    check(
+      "pane skill references",
+      () => {
+        const dir = resolve(".");
+        const { config } = readConfig(dir);
+        const skills = loadSkills(dir);
+        const skillNames = new Set(skills.map((s) => s.name));
+        const unresolved: string[] = [];
+        for (const row of config.rows) {
+          for (const pane of row.panes) {
+            if (pane.skill && !skillNames.has(pane.skill)) {
+              unresolved.push(`${pane.title ?? "untitled"} → ${pane.skill}`);
+            }
+          }
+        }
+        if (unresolved.length > 0) {
+          throw new Error(`${unresolved.length} unresolved: ${unresolved.join(", ")}`);
+        }
+        const count = config.rows.flatMap((r) => r.panes).filter((p) => p.skill).length;
+        return count > 0 ? `${count} reference(s), all resolved` : "no skill references";
       },
       { optional: true },
     ),

@@ -9,8 +9,30 @@
  */
 
 import { execFileSync } from "node:child_process";
+import { existsSync, readdirSync, statSync, unlinkSync } from "node:fs";
+import { join } from "node:path";
 import { createServer, type Server } from "node:http";
 import { computePortPanes, computeAgentStates } from "./session-monitor.ts";
+
+/** Remove dispatch files older than 24 hours */
+function cleanupDispatchFiles(dir: string): void {
+  const dispatchDir = join(dir, ".tasks", "dispatch");
+  if (!existsSync(dispatchDir)) return;
+  const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+  try {
+    for (const file of readdirSync(dispatchDir)) {
+      const filePath = join(dispatchDir, file);
+      try {
+        const mtime = statSync(filePath).mtimeMs;
+        if (mtime < cutoff) unlinkSync(filePath);
+      } catch {
+        // skip files we can't stat/delete
+      }
+    }
+  } catch {
+    // dispatch dir unreadable — skip
+  }
+}
 
 const INTERVAL = 1000;
 
@@ -177,6 +199,9 @@ async function startOrchestrator(): Promise<void> {
           }
         }
       }
+
+      // Clean up stale dispatch files on startup
+      cleanupDispatchFiles(process.cwd());
 
       stopOrchestrator = createOrchestrator({
         session,

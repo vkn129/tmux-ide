@@ -87,6 +87,7 @@ const knownCommands = new Set([
   "goal",
   "task",
   "plan",
+  "skill",
   "setup",
   "send",
   "dispatch",
@@ -378,6 +379,16 @@ try {
         sub: positionals[1],
         args: positionals.slice(2),
         values: { status: values.status },
+      });
+      break;
+    }
+
+    case "skill": {
+      const { skillCommand } = await import("../src/skill.ts");
+      await skillCommand(null, {
+        json,
+        sub: positionals[1],
+        args: positionals.slice(2),
       });
       break;
     }

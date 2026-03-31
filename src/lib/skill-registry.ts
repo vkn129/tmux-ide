@@ -1,4 +1,5 @@
 import { join } from "node:path";
+import { homedir } from "node:os";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import yaml from "js-yaml";
 
@@ -44,23 +45,36 @@ function parseSkillFile(content: string): Skill | null {
   }
 }
 
-/**
- * Load all skill definitions from .tmux-ide/skills/*.md
- */
-export function loadSkills(dir: string): Skill[] {
-  const skillsDir = join(dir, SKILLS_DIR);
+function loadSkillsFromDir(skillsDir: string): Skill[] {
   if (!existsSync(skillsDir)) return [];
-
   const files = readdirSync(skillsDir).filter((f) => f.endsWith(".md"));
   const skills: Skill[] = [];
-
   for (const file of files) {
     const content = readFileSync(join(skillsDir, file), "utf-8");
     const skill = parseSkillFile(content);
     if (skill) skills.push(skill);
   }
-
   return skills;
+}
+
+/**
+ * Load all skill definitions from .tmux-ide/skills/*.md (project)
+ * and ~/.tmux-ide/skills/*.md (personal). Project skills take precedence.
+ */
+export function loadSkills(dir: string): Skill[] {
+  const projectSkills = loadSkillsFromDir(join(dir, SKILLS_DIR));
+  const personalDir = join(homedir(), SKILLS_DIR);
+  const personalSkills = loadSkillsFromDir(personalDir);
+
+  // Project skills take precedence over personal skills by name
+  const nameSet = new Set(projectSkills.map((s) => s.name));
+  for (const ps of personalSkills) {
+    if (!nameSet.has(ps.name)) {
+      projectSkills.push(ps);
+    }
+  }
+
+  return projectSkills;
 }
 
 /**
