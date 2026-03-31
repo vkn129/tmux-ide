@@ -25,7 +25,7 @@ import {
   normalizeMission,
   type Task,
 } from "./lib/task-store.ts";
-import { parseProof } from "./task.ts";
+import { parseProof, taskCommand } from "./task.ts";
 
 let tmpDir: string;
 
@@ -91,6 +91,36 @@ describe("mission", () => {
     ensureTasksDir(tmpDir);
     clearMission(tmpDir);
     expect(loadMission(tmpDir)).toBe(null);
+  });
+
+  it("plan-complete only activates the first milestone and locks the rest", async () => {
+    saveMission(tmpDir, {
+      title: "Test",
+      description: "",
+      status: "planning",
+      branch: null,
+      milestones: [
+        { id: "M1", title: "First", description: "", status: "active", order: 1, created: "2026-01-01T00:00:00Z", updated: "2026-01-01T00:00:00Z" },
+        { id: "M2", title: "Second", description: "", status: "active", order: 2, created: "2026-01-01T00:00:00Z", updated: "2026-01-01T00:00:00Z" },
+        { id: "M3", title: "Third", description: "", status: "done", order: 3, created: "2026-01-01T00:00:00Z", updated: "2026-01-01T00:00:00Z" },
+      ],
+      created: "2026-01-01T00:00:00Z",
+      updated: "2026-01-01T00:00:00Z",
+    });
+
+    await taskCommand(tmpDir, {
+      action: "mission",
+      sub: "plan-complete",
+      args: [],
+      values: {},
+      json: true,
+    });
+
+    const mission = loadMission(tmpDir)!;
+    expect(mission.status).toBe("active");
+    expect(mission.milestones.find((m) => m.id === "M1")?.status).toBe("active");
+    expect(mission.milestones.find((m) => m.id === "M2")?.status).toBe("locked");
+    expect(mission.milestones.find((m) => m.id === "M3")?.status).toBe("locked");
   });
 });
 

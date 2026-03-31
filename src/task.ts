@@ -183,14 +183,16 @@ function handleMission(
         outputError(`Mission is "${mission.status}", expected "planning"`, "CONFLICT");
       }
       mission.status = "active";
-      // Activate first milestone if any
+      // Normalize milestone activation so plan completion always starts with only
+      // the earliest milestone active, even if planning left bad statuses behind.
       const sorted = [...mission.milestones].sort((a, b) => a.order - b.order);
-      const first = sorted.find((m) => m.status === "locked");
-      if (first) {
-        first.status = "active";
-        first.updated = new Date().toISOString();
+      const first = sorted[0] ?? null;
+      const now = new Date().toISOString();
+      for (const milestone of sorted) {
+        milestone.status = first && milestone.id === first.id ? "active" : "locked";
+        milestone.updated = now;
       }
-      mission.updated = new Date().toISOString();
+      mission.updated = now;
       saveMission(dir, mission);
       // Check coverage invariant
       const { unclaimed } = checkCoverage(dir);
