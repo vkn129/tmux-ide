@@ -7,12 +7,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { join } from "node:path";
-import {
-  loadMission,
-  nextTaskId,
-  saveTask,
-  type Task,
-} from "./task-store.ts";
+import { loadMission, nextTaskId, saveTask, type Task } from "./task-store.ts";
 import { appendEvent, readEvents, type OrchestratorEvent } from "./event-log.ts";
 import { sendCommand, type PaneInfo } from "../widgets/lib/pane-comms.ts";
 import type { OrchestratorConfig, OrchestratorState } from "./orchestrator.ts";
@@ -91,7 +86,9 @@ export function saveResearchState(dir: string, state: ResearchState): void {
   renameSync(tmpPath, path);
 }
 
-function getResearchConfig(config: Partial<OrchestratorConfig> & { research?: ResearchConfigShape }) {
+function getResearchConfig(
+  config: Partial<OrchestratorConfig> & { research?: ResearchConfigShape },
+) {
   return config.research ?? {};
 }
 
@@ -147,7 +144,10 @@ export function evaluateTriggers(
   if (mission && milestoneStep > 0) {
     for (const milestone of mission.milestones) {
       const doneCount = tasks.filter(
-        (task) => task.milestone === milestone.id && task.status === "done" && !task.tags.includes("research"),
+        (task) =>
+          task.milestone === milestone.id &&
+          task.status === "done" &&
+          !task.tags.includes("research"),
       ).length;
       const previousCount = researchState.milestoneTaskCounts[milestone.id] ?? 0;
       const previousBucket = Math.floor(previousCount / milestoneStep);
@@ -156,7 +156,11 @@ export function evaluateTriggers(
         results.push({
           type: "milestone_progress",
           reason: `Milestone ${milestone.id} reached ${doneCount} completed task(s)`,
-          context: { milestoneId: milestone.id, completedCount: doneCount, milestoneTitle: milestone.title },
+          context: {
+            milestoneId: milestone.id,
+            completedCount: doneCount,
+            milestoneTitle: milestone.title,
+          },
         });
       }
       researchState.milestoneTaskCounts[milestone.id] = doneCount;
@@ -164,7 +168,11 @@ export function evaluateTriggers(
   }
 
   if (triggers.milestone_complete) {
-    const event = latestEventAfter(events, "milestone_complete", researchState.lastResearchAt.milestone_complete);
+    const event = latestEventAfter(
+      events,
+      "milestone_complete",
+      researchState.lastResearchAt.milestone_complete,
+    );
     if (event && !hasCooldown(researchState, "milestone_complete")) {
       results.push({
         type: "milestone_complete",
@@ -173,7 +181,10 @@ export function evaluateTriggers(
     }
   }
 
-  if ((triggers.periodic_minutes ?? 0) > 0 && !hasCooldown(researchState, "periodic", triggers.periodic_minutes)) {
+  if (
+    (triggers.periodic_minutes ?? 0) > 0 &&
+    !hasCooldown(researchState, "periodic", triggers.periodic_minutes)
+  ) {
     results.push({
       type: "periodic",
       reason: `Periodic research interval elapsed (${triggers.periodic_minutes} minute window)`,
@@ -204,7 +215,11 @@ export function evaluateTriggers(
   }
 
   if (triggers.discovered_issue) {
-    const event = latestEventAfter(events, "discovered_issue", researchState.lastResearchAt.discovered_issue);
+    const event = latestEventAfter(
+      events,
+      "discovered_issue",
+      researchState.lastResearchAt.discovered_issue,
+    );
     if (event && !hasCooldown(researchState, "discovered_issue")) {
       results.push({
         type: "discovered_issue",
@@ -259,7 +274,8 @@ export function buildResearchPrompt(
     prompt += `## Milestone Context\n`;
     if (context.milestoneId) prompt += `Milestone: ${String(context.milestoneId)}\n`;
     if (context.milestoneTitle) prompt += `Title: ${String(context.milestoneTitle)}\n`;
-    if (context.completedCount != null) prompt += `Completed tasks: ${String(context.completedCount)}\n`;
+    if (context.completedCount != null)
+      prompt += `Completed tasks: ${String(context.completedCount)}\n`;
     prompt += "\n";
   }
 
@@ -302,10 +318,9 @@ function activeMilestoneId(dir: string): string | null {
 }
 
 export function dispatchResearch(
-  config: Pick<
-    OrchestratorConfig,
-    "session" | "dir" | "masterPane" | "maxConcurrentAgents"
-  > & { research?: ResearchConfigShape },
+  config: Pick<OrchestratorConfig, "session" | "dir" | "masterPane" | "maxConcurrentAgents"> & {
+    research?: ResearchConfigShape;
+  },
   state: OrchestratorState,
   researchState: ResearchState,
   tasks: Task[],
@@ -345,7 +360,10 @@ export function dispatchResearch(
     lastError: null,
     nextRetryAt: null,
     depends_on: [],
-    milestone: typeof trigger.context?.milestoneId === "string" ? trigger.context.milestoneId : activeMilestoneId(config.dir),
+    milestone:
+      typeof trigger.context?.milestoneId === "string"
+        ? trigger.context.milestoneId
+        : activeMilestoneId(config.dir),
     specialty: "researcher",
     fulfills: [],
     discoveredIssues: [],
@@ -363,7 +381,11 @@ export function dispatchResearch(
   const filename = `research-${id}.md`;
   writeFileSync(join(dispatchDir, filename), prompt);
 
-  const sent = sendCommand(config.session, pane.id, `Read and execute: .tasks/dispatch/${filename}`);
+  const sent = sendCommand(
+    config.session,
+    pane.id,
+    `Read and execute: .tasks/dispatch/${filename}`,
+  );
   if (!sent) {
     task.status = "todo";
     task.assignee = null;
@@ -429,16 +451,13 @@ export function processResearchCompletion(
   if (!existsSync(libraryDir)) mkdirSync(libraryDir, { recursive: true });
 
   const filename = researchLibraryFile(researchType);
-  const body = [
-    `## ${task.id}: ${task.title}`,
-    `Type: ${researchType}`,
-    summary,
-    "---",
-    "",
-  ].join("\n");
+  const body = [`## ${task.id}: ${task.title}`, `Type: ${researchType}`, summary, "---", ""].join(
+    "\n",
+  );
   appendFileSync(join(libraryDir, filename), body + "\n");
 
-  researchState.activeResearchTaskId = researchState.activeResearchTaskId === task.id ? null : researchState.activeResearchTaskId;
+  researchState.activeResearchTaskId =
+    researchState.activeResearchTaskId === task.id ? null : researchState.activeResearchTaskId;
   researchState.lastResearchAt[researchType] = task.updated;
   if (researchType === "mission_start") {
     researchState.missionStartAnalyzed = true;

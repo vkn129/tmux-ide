@@ -52,7 +52,7 @@ import {
 import { slugify } from "./slugify.ts";
 import { recordTaskTime } from "./token-tracker.ts";
 import { listSessionPanes, sendCommand, type PaneInfo } from "../widgets/lib/pane-comms.ts";
-import { appendEvent, readEvents } from "./event-log.ts";
+import { appendEvent, readEvents, type OrchestratorEvent } from "./event-log.ts";
 import { loadSkill } from "./skill-registry.ts";
 import { isGhAvailable, createMissionPr } from "./github-pr.ts";
 import { computeAndSaveMetrics, appendMissionHistory } from "./metrics.ts";
@@ -1678,7 +1678,13 @@ export function createOrchestrator(initialConfig: OrchestratorConfig): () => voi
     tasks = loadTasks(config.dir);
 
     if (config.dispatchMode === "missions" && config.research?.enabled) {
-      const triggers = evaluateTriggers(config, state, researchState, tasks, readEvents(config.dir));
+      const triggers = evaluateTriggers(
+        config,
+        state,
+        researchState,
+        tasks,
+        readEvents(config.dir),
+      );
       if (triggers.length > 0) {
         dispatchResearch(config, state, researchState, tasks, panes, triggers[0]);
         tasks = loadTasks(config.dir);

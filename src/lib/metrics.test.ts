@@ -74,12 +74,31 @@ describe("computeMetrics", () => {
   });
 
   it("includes milestone metrics", () => {
-    saveMission(tmpDir, makeMission({
-      milestones: [
-        { id: "M1", title: "Phase 1", description: "", status: "done", order: 1, created: "2026-01-01T00:00:00Z", updated: "2026-01-01T01:00:00Z" },
-        { id: "M2", title: "Phase 2", description: "", status: "active", order: 2, created: "2026-01-01T00:00:00Z", updated: "2026-01-01T00:00:00Z" },
-      ],
-    }));
+    saveMission(
+      tmpDir,
+      makeMission({
+        milestones: [
+          {
+            id: "M1",
+            title: "Phase 1",
+            description: "",
+            status: "done",
+            order: 1,
+            created: "2026-01-01T00:00:00Z",
+            updated: "2026-01-01T01:00:00Z",
+          },
+          {
+            id: "M2",
+            title: "Phase 2",
+            description: "",
+            status: "active",
+            order: 2,
+            created: "2026-01-01T00:00:00Z",
+            updated: "2026-01-01T00:00:00Z",
+          },
+        ],
+      }),
+    );
     saveTask(tmpDir, makeTask({ id: "001", milestone: "M1", status: "done" }));
     saveTask(tmpDir, makeTask({ id: "002", milestone: "M2", status: "todo" }));
 
@@ -123,10 +142,32 @@ describe("computeMetrics", () => {
 describe("saveMetrics / loadMetrics", () => {
   it("round-trips metrics snapshot", () => {
     const snapshot: MetricsSnapshot = {
-      session: { startedAt: "2026-01-01T00:00:00Z", durationMs: 60000, status: "active", agentCount: 2 },
-      tasks: { total: 5, completed: 3, failed: 0, retried: 1, completionRate: 0.6, retryRate: 0.2, avgDurationMs: 5000, medianDurationMs: 4000, p90DurationMs: 8000, byMilestone: [] },
+      session: {
+        startedAt: "2026-01-01T00:00:00Z",
+        durationMs: 60000,
+        status: "active",
+        agentCount: 2,
+      },
+      tasks: {
+        total: 5,
+        completed: 3,
+        failed: 0,
+        retried: 1,
+        completionRate: 0.6,
+        retryRate: 0.2,
+        avgDurationMs: 5000,
+        medianDurationMs: 4000,
+        p90DurationMs: 8000,
+        byMilestone: [],
+      },
       agents: [],
-      mission: { title: "Test", status: "active", milestonesCompleted: 1, validationPassRate: 1, wallClockMs: 60000 },
+      mission: {
+        title: "Test",
+        status: "active",
+        milestonesCompleted: 1,
+        validationPassRate: 1,
+        wallClockMs: 60000,
+      },
       timeline: [],
     };
     saveMetrics(tmpDir, snapshot);

@@ -872,7 +872,7 @@ export function createApp(options: CreateAppOptions = {}): Hono {
     const tasks = loadTasks(session.dir);
     const activeTask =
       state.activeResearchTaskId != null
-        ? tasks.find((task) => task.id === state.activeResearchTaskId) ?? null
+        ? (tasks.find((task) => task.id === state.activeResearchTaskId) ?? null)
         : null;
     const findings = tasks
       .filter((task) => task.tags.includes("research") && task.status === "done")

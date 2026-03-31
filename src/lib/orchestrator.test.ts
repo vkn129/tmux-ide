@@ -273,9 +273,7 @@ describe("detectCompletions", () => {
     detectCompletions(config, state, [task], panes, researchState);
 
     expect(loadResearchState(tmpDir).activeResearchTaskId).toBe(null);
-    expect(
-      existsSync(join(tmpDir, ".tmux-ide", "library", "research-findings.md")),
-    ).toBeTruthy();
+    expect(existsSync(join(tmpDir, ".tmux-ide", "library", "research-findings.md"))).toBeTruthy();
     expect(
       readFileSync(join(tmpDir, ".tmux-ide", "library", "research-findings.md"), "utf-8"),
     ).toContain("Found a contract gap");

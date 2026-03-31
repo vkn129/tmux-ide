@@ -40,8 +40,12 @@ export async function metricsCommand(
       for (const a of metrics.agents) {
         const specs = a.specialties.length > 0 ? ` [${a.specialties.join(", ")}]` : "";
         console.log(`  ${a.name}${specs}`);
-        console.log(`    Tasks: ${a.taskCount}  Retries: ${a.retryCount}  Utilization: ${fmtPct(a.utilization)}`);
-        console.log(`    Active: ${fmtDuration(a.activeTimeMs)}  Idle: ${fmtDuration(a.idleTimeMs)}`);
+        console.log(
+          `    Tasks: ${a.taskCount}  Retries: ${a.retryCount}  Utilization: ${fmtPct(a.utilization)}`,
+        );
+        console.log(
+          `    Active: ${fmtDuration(a.activeTimeMs)}  Idle: ${fmtDuration(a.idleTimeMs)}`,
+        );
       }
       break;
     }
@@ -58,7 +62,9 @@ export async function metricsCommand(
       console.log("Activity Timeline:");
       for (const t of metrics.timeline.slice(-20)) {
         const ts = new Date(t.timestamp).toLocaleTimeString();
-        console.log(`  ${ts}  done:${t.completedTasks} active:${t.activeTasks} busy:${t.busyAgents} idle:${t.idleAgents}`);
+        console.log(
+          `  ${ts}  done:${t.completedTasks} active:${t.activeTasks} busy:${t.busyAgents} idle:${t.idleAgents}`,
+        );
       }
       break;
     }
@@ -71,8 +77,7 @@ export async function metricsCommand(
         const highRetryAgents = [...metrics.agents]
           .filter((a) => a.retryCount > 0)
           .sort((a, b) => b.retryCount - a.retryCount);
-        const ranking = [...metrics.agents]
-          .sort((a, b) => b.utilization - a.utilization);
+        const ranking = [...metrics.agents].sort((a, b) => b.utilization - a.utilization);
         console.log(JSON.stringify({ bottlenecks, highRetryAgents, ranking }, null, 2));
         return;
       }
@@ -84,7 +89,9 @@ export async function metricsCommand(
       if (slowest.length > 0) {
         console.log("  Slowest milestones:");
         for (const m of slowest.slice(0, 3)) {
-          console.log(`    ${m.id} ${m.title}: ${fmtDuration(m.durationMs)} (${m.completedCount}/${m.taskCount} tasks)`);
+          console.log(
+            `    ${m.id} ${m.title}: ${fmtDuration(m.durationMs)} (${m.completedCount}/${m.taskCount} tasks)`,
+          );
         }
       }
       // High-retry agents
@@ -118,7 +125,9 @@ export async function metricsCommand(
       for (const m of history) {
         console.log(`  ${m.title} [${m.status}]`);
         console.log(`    Completed: ${m.completedAt}  Duration: ${fmtDuration(m.wallClockMs)}`);
-        console.log(`    Tasks: ${m.taskCount} (${fmtPct(m.completionRate)} done)  Agents: ${m.agentCount}  Milestones: ${m.milestonesCompleted}`);
+        console.log(
+          `    Tasks: ${m.taskCount} (${fmtPct(m.completionRate)} done)  Agents: ${m.agentCount}  Milestones: ${m.milestonesCompleted}`,
+        );
       }
       break;
     }
@@ -144,10 +153,16 @@ export async function metricsCommand(
       console.log(`  Agents: ${metrics.session.agentCount}`);
       console.log();
       console.log("Tasks:");
-      console.log(`  Total: ${metrics.tasks.total}  Done: ${metrics.tasks.completed}  Failed: ${metrics.tasks.failed}`);
-      console.log(`  Completion rate: ${fmtPct(metrics.tasks.completionRate)}  Retry rate: ${fmtPct(metrics.tasks.retryRate)}`);
+      console.log(
+        `  Total: ${metrics.tasks.total}  Done: ${metrics.tasks.completed}  Failed: ${metrics.tasks.failed}`,
+      );
+      console.log(
+        `  Completion rate: ${fmtPct(metrics.tasks.completionRate)}  Retry rate: ${fmtPct(metrics.tasks.retryRate)}`,
+      );
       if (metrics.tasks.avgDurationMs > 0) {
-        console.log(`  Avg duration: ${fmtDuration(metrics.tasks.avgDurationMs)}  Median: ${fmtDuration(metrics.tasks.medianDurationMs)}  P90: ${fmtDuration(metrics.tasks.p90DurationMs)}`);
+        console.log(
+          `  Avg duration: ${fmtDuration(metrics.tasks.avgDurationMs)}  Median: ${fmtDuration(metrics.tasks.medianDurationMs)}  P90: ${fmtDuration(metrics.tasks.p90DurationMs)}`,
+        );
       }
       if (metrics.mission.title) {
         console.log();

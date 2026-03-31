@@ -102,7 +102,7 @@ export function computeMetrics(dir: string): MetricsSnapshot {
 
   // Session info
   const sessionStart = events.find((e) => e.type === "session_start");
-  const startedAt = sessionStart?.timestamp ?? (events[0]?.timestamp ?? null);
+  const startedAt = sessionStart?.timestamp ?? events[0]?.timestamp ?? null;
   const now = Date.now();
   const durationMs = startedAt ? now - new Date(startedAt).getTime() : 0;
 
@@ -116,8 +116,9 @@ export function computeMetrics(dir: string): MetricsSnapshot {
   // Task durations from completion events with durationMs
   const durations: number[] = [];
   for (const evt of events) {
-    if (evt.type === "completion" && (evt as Record<string, unknown>).durationMs) {
-      durations.push((evt as Record<string, unknown>).durationMs as number);
+    const durationMs = (evt as unknown as { durationMs?: unknown }).durationMs;
+    if (evt.type === "completion" && typeof durationMs === "number") {
+      durations.push(durationMs);
     }
   }
   durations.sort((a, b) => a - b);
@@ -199,20 +200,15 @@ export function computeMetrics(dir: string): MetricsSnapshot {
   });
 
   // Mission metrics
-  const milestonesCompleted = (mission?.milestones ?? []).filter(
-    (m) => m.status === "done",
-  ).length;
-  const missionWallClock = mission?.created
-    ? now - new Date(mission.created).getTime()
-    : 0;
+  const milestonesCompleted = (mission?.milestones ?? []).filter((m) => m.status === "done").length;
+  const missionWallClock = mission?.created ? now - new Date(mission.created).getTime() : 0;
 
   // Validation pass rate (simple estimate from completion events)
   const validationEvents = events.filter(
     (e) => e.type === "milestone_complete" || e.type === "validation_failed",
   );
   const passEvents = validationEvents.filter((e) => e.type === "milestone_complete").length;
-  const validationPassRate =
-    validationEvents.length > 0 ? passEvents / validationEvents.length : 1;
+  const validationPassRate = validationEvents.length > 0 ? passEvents / validationEvents.length : 1;
 
   // Timeline: sample at 5-minute intervals
   const timeline: TimelineEntry[] = [];
@@ -224,9 +220,9 @@ export function computeMetrics(dir: string): MetricsSnapshot {
       const completedByNow = events.filter(
         (e) => e.type === "completion" && e.timestamp <= cutoff,
       ).length;
-      const activeByNow = events.filter(
-        (e) => e.type === "dispatch" && e.timestamp <= cutoff,
-      ).length - completedByNow;
+      const activeByNow =
+        events.filter((e) => e.type === "dispatch" && e.timestamp <= cutoff).length -
+        completedByNow;
 
       // Last heartbeat before this timestamp
       const heartbeat = events
@@ -268,9 +264,10 @@ export function computeMetrics(dir: string): MetricsSnapshot {
       retried,
       completionRate: Math.round(completionRate * 100) / 100,
       retryRate: Math.round(retryRate * 100) / 100,
-      avgDurationMs: durations.length > 0
-        ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length)
-        : 0,
+      avgDurationMs:
+        durations.length > 0
+          ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length)
+          : 0,
       medianDurationMs: median(durations),
       p90DurationMs: percentile(durations, 90),
       byMilestone,

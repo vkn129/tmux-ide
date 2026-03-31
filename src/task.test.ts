@@ -57,9 +57,11 @@ function captureLogs(run: () => void | Promise<void>): Promise<string[]> | strin
   try {
     const result = run();
     if (result instanceof Promise) {
-      return result.finally(() => {
-        console.log = origLog;
-      }).then(() => logs);
+      return result
+        .finally(() => {
+          console.log = origLog;
+        })
+        .then(() => logs);
     }
     console.log = origLog;
     return logs;

@@ -33,11 +33,7 @@ import {
 import { getSessionName, readConfig } from "./lib/yaml-io.ts";
 import { getSessionState } from "./lib/tmux.ts";
 import { listSessionPanes } from "./widgets/lib/pane-comms.ts";
-import {
-  dispatchResearch,
-  loadResearchState,
-  type ResearchTrigger,
-} from "./lib/research.ts";
+import { dispatchResearch, loadResearchState, type ResearchTrigger } from "./lib/research.ts";
 import { type OrchestratorState } from "./lib/orchestrator.ts";
 
 export function parseProof(raw: string, existing: ProofSchema | null): ProofSchema {
@@ -149,7 +145,7 @@ function handleResearch(dir: string, sub: string | undefined, args: string[], js
       const tasks = loadTasks(dir);
       const activeTask =
         researchState.activeResearchTaskId != null
-          ? tasks.find((task) => task.id === researchState.activeResearchTaskId) ?? null
+          ? (tasks.find((task) => task.id === researchState.activeResearchTaskId) ?? null)
           : null;
       const recentFindings = tasks
         .filter((task) => task.tags.includes("research") && task.status === "done")
@@ -174,7 +170,9 @@ function handleResearch(dir: string, sub: string | undefined, args: string[], js
       if (json) {
         console.log(JSON.stringify(payload, null, 2));
       } else {
-        console.log(`Active research task: ${activeTask ? `${activeTask.id} — ${activeTask.title}` : "none"}`);
+        console.log(
+          `Active research task: ${activeTask ? `${activeTask.id} — ${activeTask.title}` : "none"}`,
+        );
         console.log(`Mission start analyzed: ${researchState.missionStartAnalyzed ? "yes" : "no"}`);
         console.log(`Recent findings: ${recentFindings.length}`);
       }
@@ -245,7 +243,10 @@ function handleResearch(dir: string, sub: string | undefined, args: string[], js
   trigger <type>                 Manually dispatch a research task`);
       break;
     default:
-      outputError("Usage: tmux-ide research <status|trigger>\nRun: tmux-ide research help", "USAGE");
+      outputError(
+        "Usage: tmux-ide research <status|trigger>\nRun: tmux-ide research help",
+        "USAGE",
+      );
   }
 }
 

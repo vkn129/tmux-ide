@@ -8,15 +8,7 @@ export interface PaneInfo {
   width: number;
   height: number;
   active: boolean;
-  role:
-    | "lead"
-    | "teammate"
-    | "planner"
-    | "validator"
-    | "researcher"
-    | "widget"
-    | "shell"
-    | null;
+  role: "lead" | "teammate" | "planner" | "validator" | "researcher" | "widget" | "shell" | null;
   name: string | null;
   type: string | null;
 }

@@ -2,7 +2,13 @@ import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { makeMission, makeOrchestratorConfig, makeOrchestratorState, makePane, makeTask } from "../__tests__/support.ts";
+import {
+  makeMission,
+  makeOrchestratorConfig,
+  makeOrchestratorState,
+  makePane,
+  makeTask,
+} from "../__tests__/support.ts";
 import { _setExecutor, type PaneInfo } from "../widgets/lib/pane-comms.ts";
 import { saveMission, loadTasks, ensureTasksDir } from "./task-store.ts";
 import {
@@ -136,7 +142,10 @@ describe("evaluateTriggers", () => {
 
 describe("buildResearchPrompt", () => {
   it("includes mission context", () => {
-    saveMission(tmpDir, makeMission({ title: "Ship Droid Missions", description: "Audit the mission system" }));
+    saveMission(
+      tmpDir,
+      makeMission({ title: "Ship Droid Missions", description: "Audit the mission system" }),
+    );
 
     const prompt = buildResearchPrompt(tmpDir, "mission_start", {
       taskId: "099",
@@ -158,7 +167,13 @@ describe("dispatchResearch", () => {
     };
     const state = makeOrchestratorState();
     const researchState = makeResearchState();
-    const pane = makePane({ id: "%2", index: 1, title: "Researcher", role: "researcher", currentCommand: "zsh" });
+    const pane = makePane({
+      id: "%2",
+      index: 1,
+      title: "Researcher",
+      role: "researcher",
+      currentCommand: "zsh",
+    });
     mockPanes = [pane];
 
     const task = dispatchResearch(config, state, researchState, [], [pane], {
