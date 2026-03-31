@@ -1,44 +1,85 @@
 ---
 title: tmux-ide
-description: Turn any project into a tmux-powered terminal IDE
+description: Autonomous multi-agent development with mission-driven orchestration
 ---
 
 # tmux-ide
 
-Turn any project into a tmux-powered terminal IDE with a simple `ide.yml` config file.
+Turn any project into an autonomous multi-agent development environment. One config file, multiple AI agents, mission-driven orchestration.
 
 ```
-┌───────────────┬───────────────┬───────────────┐
-│               │               │               │
-│   Claude 1    │   Claude 2    │   Claude 3    │
-│               │               │               │
-│               │               │               │
-├───────┬───────┴───────────────┴───────────────┤
-│       │                                       │
-│ Dev   │              Shell                    │
-│ Server│                                       │
-└───────┴───────────────────────────────────────┘
+┌─────────────┬─────────────┬─────────────┐
+│             │             │             │
+│  Lead       │  Frontend   │  Backend    │  ← skill-matched agents
+│  (Planner)  │  (React)    │  (API)      │
+│             │             │             │
+├──────┬──────┴─────────────┴──────┬──────┤
+│      │                           │      │
+│ Dev  │      Mission Control      │ Shell │
+│ Srv  │      (TUI dashboard)      │      │
+└──────┴───────────────────────────┴──────┘
 ```
 
-Define your workspace layout in an `ide.yml` file, run `tmux-ide`, and get a fully configured tmux session with labeled panes, dev servers running, and Claude instances ready to go.
+## Two Modes
+
+**Classic Mode** -- Define panes in `ide.yml`, run `tmux-ide`, get a terminal IDE with labeled panes and dev servers.
+
+**Missions Mode** -- Autonomous multi-agent orchestration. Define a mission, and agents self-organize through milestones, validation contracts, and skill-based dispatch.
+
+```
+Mission → Milestones → Tasks → Agents (skill-matched)
+                                 ↓
+                           Validation → Remediation
+                                 ↓
+                           Mission Complete → PR
+```
 
 ## Quick Start
 
 ```bash
-# Install globally
 npm i -g tmux-ide
 
-# Or run directly
-npx tmux-ide init    # scaffold an ide.yml
-npx tmux-ide         # launch the IDE
-npx tmux-ide restart # restart with new config
+# Classic mode
+tmux-ide init           # scaffold ide.yml
+tmux-ide                # launch
+
+# Missions mode
+tmux-ide init --template missions
+tmux-ide mission create "Build auth system" -d "JWT + refresh tokens"
+tmux-ide                # → agents, dashboard at localhost:6060, autonomous
 ```
 
+## Feature Highlights
+
 <Cards>
-  <Card title="What's New in 1.3.0" href="/docs/release-1-3-0" />
+  <Card title="What's New in 2.0" href="/docs/release-2-0-0" />
   <Card title="Getting Started" href="/docs/getting-started" />
   <Card title="Configuration" href="/docs/configuration" />
   <Card title="Templates" href="/docs/templates" />
   <Card title="Agent Teams" href="/docs/agent-teams" />
   <Card title="Contributing" href="/docs/contributing" />
 </Cards>
+
+### Milestone Gating
+
+Sequential execution phases. Tasks only dispatch when their milestone is active and all predecessors are done. Auto-progression when a milestone's tasks complete.
+
+### Validation Contracts
+
+Assertion-based verification. Define testable claims in a contract. A validator agent independently checks work. Failed assertions auto-create remediation tasks.
+
+### Skill-Based Dispatch
+
+Match task specialty to agent capabilities. Specialist agents get specialist tasks. Generalists pick up unspecialized work. Tasks wait for the right agent instead of dispatching to the wrong one.
+
+### Knowledge Library
+
+Shared learnings auto-append as agents complete tasks. Architecture docs, service registries, and tag-matched references are injected into dispatch prompts.
+
+### Live Dashboard
+
+Web dashboard with KPIs, milestone timeline, agent utilization, validation status, and activity timeline. Auto-refreshes every 5 seconds.
+
+### Researcher Agent
+
+Continuous internal auditing. Triggers on mission start, milestone progress, stalls, retry clusters, and discovered issues. Writes findings to the knowledge library.
