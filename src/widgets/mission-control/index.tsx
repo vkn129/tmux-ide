@@ -36,8 +36,8 @@ const SPINNERS = /^[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏⠂⠒⠢⠆⠐⠠⠄◐◓◑
 function isAgentPane(pane: PaneInfo): boolean {
   const cmd = pane.currentCommand?.toLowerCase() ?? "";
   return (
-    cmd === "claude" ||
-    cmd === "codex" ||
+    cmd.startsWith("claude") ||
+    cmd.startsWith("codex") ||
     pane.role === "lead" ||
     pane.role === "teammate" ||
     pane.title.includes("Claude Code") ||

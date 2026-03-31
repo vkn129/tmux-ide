@@ -132,7 +132,7 @@ export function getPaneBusyStatus(session: string, paneId: string): PaneBusyStat
   const pane = panes.find((p) => p.id === paneId);
   if (!pane) return "busy";
   const cmd = pane.currentCommand.toLowerCase();
-  if (cmd === "claude" || cmd === "codex") return "agent";
+  if (cmd.startsWith("claude") || cmd.startsWith("codex")) return "agent";
   if (SHELL_COMMANDS.has(cmd)) return "idle";
   return "busy";
 }
