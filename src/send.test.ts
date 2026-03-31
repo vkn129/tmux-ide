@@ -52,4 +52,19 @@ describe("writeDispatchFile", () => {
     expect(r2).not.toBeNull();
     expect(r1!.filePath).not.toBe(r2!.filePath);
   });
+
+  it("adds a random suffix so same-pane writes stay unique in the same millisecond", () => {
+    const originalNow = Date.now;
+    Date.now = () => 1234567890;
+    try {
+      const msg = "z".repeat(200);
+      const r1 = writeDispatchFile(tmpDir, "%1", msg);
+      const r2 = writeDispatchFile(tmpDir, "%1", msg);
+      expect(r1).not.toBeNull();
+      expect(r2).not.toBeNull();
+      expect(r1!.filePath).not.toBe(r2!.filePath);
+    } finally {
+      Date.now = originalNow;
+    }
+  });
 });

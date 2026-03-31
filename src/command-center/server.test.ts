@@ -495,11 +495,59 @@ describe("POST /api/project/:name/milestones", () => {
     const res = await app.request("/api/project/test-project/milestones/M1", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: "done" }),
+      body: JSON.stringify({ status: "validating" }),
     });
     expect(res.status).toBe(200);
     const body = (await res.json()) as { ok: boolean; milestone: { status: string } };
-    expect(body.milestone.status).toBe("done");
+    expect(body.milestone.status).toBe("validating");
+  });
+
+  it("rejects invalid milestone transitions", async () => {
+    saveMission(tmpDir, {
+      title: "Test",
+      description: "",
+      status: "active",
+      branch: null,
+      milestones: [
+        { id: "M1", title: "Phase 1", description: "", status: "locked", order: 1, created: "2026-01-01T00:00:00Z", updated: "2026-01-01T00:00:00Z" },
+      ],
+      created: "2026-01-01T00:00:00Z",
+      updated: "2026-01-01T00:00:00Z",
+    });
+
+    const app = createApp();
+    const res = await app.request("/api/project/test-project/milestones/M1", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "done" }),
+    });
+
+    expect(res.status).toBe(409);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toContain("Invalid milestone status transition");
+  });
+
+  it("rejects invalid milestone status payloads", async () => {
+    saveMission(tmpDir, {
+      title: "Test",
+      description: "",
+      status: "active",
+      branch: null,
+      milestones: [
+        { id: "M1", title: "Phase 1", description: "", status: "active", order: 1, created: "2026-01-01T00:00:00Z", updated: "2026-01-01T00:00:00Z" },
+      ],
+      created: "2026-01-01T00:00:00Z",
+      updated: "2026-01-01T00:00:00Z",
+    });
+
+    const app = createApp();
+    const res = await app.request("/api/project/test-project/milestones/M1", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "bogus" }),
+    });
+
+    expect(res.status).toBe(400);
   });
 });
 

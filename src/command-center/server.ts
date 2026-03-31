@@ -84,6 +84,21 @@ export interface CreateAppOptions {
   remoteRegistry?: RemoteRegistry;
 }
 
+const ALLOWED_MILESTONE_TRANSITIONS = new Map([
+  ["locked", new Set(["active"])],
+  ["active", new Set(["validating"])],
+  ["validating", new Set(["done", "active"])],
+  ["done", new Set<string>()],
+]);
+
+function isValidMilestoneTransition(
+  from: "locked" | "active" | "done" | "validating",
+  to: "locked" | "active" | "done" | "validating",
+): boolean {
+  if (from === to) return true;
+  return ALLOWED_MILESTONE_TRANSITIONS.get(from)?.has(to) ?? false;
+}
+
 export function createApp(options: CreateAppOptions = {}): Hono {
   const authConfig: AuthConfig = options.authConfig ?? { method: "none", token_expiry: 86400 };
   const authService = options.authService ?? new AuthService();
@@ -766,6 +781,14 @@ export function createApp(options: CreateAppOptions = {}): Hono {
     const milestone = mission.milestones.find((m) => m.id === milestoneId);
     if (!milestone) return c.json({ error: "Milestone not found" }, 404);
     const body = c.req.valid("json");
+    if (body.status && !isValidMilestoneTransition(milestone.status, body.status)) {
+      return c.json(
+        {
+          error: `Invalid milestone status transition: ${milestone.status} -> ${body.status}`,
+        },
+        409,
+      );
+    }
     if (body.status) milestone.status = body.status;
     if (body.title) milestone.title = body.title;
     if (body.description !== undefined) milestone.description = body.description;

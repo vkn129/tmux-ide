@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { resolve, join } from "node:path";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { getSessionName } from "./lib/yaml-io.ts";
@@ -28,7 +29,7 @@ export function writeDispatchFile(
   const dispatchDir = join(dir, ".tasks", "dispatch");
   if (!existsSync(dispatchDir)) mkdirSync(dispatchDir, { recursive: true });
   const paneSlug = paneId.replace("%", "");
-  const filename = `send-${paneSlug}-${Date.now()}.md`;
+  const filename = `send-${paneSlug}-${Date.now()}-${randomUUID().slice(0, 8)}.md`;
   const filePath = join(dispatchDir, filename);
   writeFileSync(filePath, message);
   return { filePath, triggerCmd: `Read and execute: .tasks/dispatch/${filename}` };

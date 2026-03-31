@@ -1533,6 +1533,24 @@ describe("validation flow", () => {
     expect(events.find((e) => e.type === "milestone_complete")).toBeTruthy();
   });
 
+  it("zero-assertion milestone advances to done", () => {
+    setupMission([
+      { id: "M1", title: "Phase 1", description: "", status: "validating", order: 1, created: "2026-01-01T00:00:00Z", updated: "2026-01-01T00:00:00Z" },
+      { id: "M2", title: "Phase 2", description: "", status: "locked", order: 2, created: "2026-01-01T00:00:00Z", updated: "2026-01-01T00:00:00Z" },
+    ]);
+
+    const task1 = makeTask({ id: "001", milestone: "M1", status: "done", fulfills: [] });
+    saveTask(tmpDir, task1);
+    saveValidationState(tmpDir, { assertions: {}, lastVerified: "2026-01-01T00:00:00Z" });
+
+    const config = makeOrchestratorConfig(tmpDir, { dispatchMode: "missions" });
+    checkValidationResults(config, [task1]);
+
+    const mission = loadMission(tmpDir)!;
+    expect(mission.milestones.find((m) => m.id === "M1")?.status).toBe("done");
+    expect(mission.milestones.find((m) => m.id === "M2")?.status).toBe("active");
+  });
+
   it("failed assertion creates remediation task and resets milestone to active", () => {
     setupMission([
       { id: "M1", title: "Phase 1", description: "", status: "validating", order: 1, created: "2026-01-01T00:00:00Z", updated: "2026-01-01T00:00:00Z" },
@@ -1573,6 +1591,28 @@ describe("validation flow", () => {
     const events = readEvents(tmpDir);
     expect(events.find((e) => e.type === "remediation")).toBeTruthy();
     expect(events.find((e) => e.type === "validation_failed")).toBeTruthy();
+  });
+
+  it("remediation skips missing assertion entries without crashing", () => {
+    setupMission([
+      { id: "M1", title: "Phase 1", description: "", status: "validating", order: 1, created: "2026-01-01T00:00:00Z", updated: "2026-01-01T00:00:00Z" },
+    ]);
+
+    const task1 = makeTask({ id: "001", milestone: "M1", status: "done", fulfills: ["A1", "A2"] });
+    saveTask(tmpDir, task1);
+    writeFileSync(
+      join(tmpDir, ".tasks", "validation-state.json"),
+      JSON.stringify({
+        assertions: {
+          A1: { status: "failing", verifiedBy: "V", verifiedAt: "2026-01-01T00:00:00Z", evidence: "broken", blockedBy: null },
+          A2: null,
+        },
+        lastVerified: "2026-01-01T00:00:00Z",
+      }),
+    );
+
+    const config = makeOrchestratorConfig(tmpDir, { dispatchMode: "missions" });
+    expect(() => checkValidationResults(config, [task1])).not.toThrow();
   });
 
   it("buildValidationPrompt includes contract and task details", () => {
@@ -1874,6 +1914,29 @@ describe("mission lifecycle", () => {
     expect(callCount2).toBe(callCount1);
   });
 
+  it("logs an error when planning cannot be dispatched", () => {
+    saveMission(tmpDir, {
+      title: "Ship v2",
+      description: "",
+      status: "planning",
+      branch: null,
+      milestones: [],
+      created: "2026-01-01T00:00:00Z",
+      updated: "2026-01-01T00:00:00Z",
+    });
+
+    const config = makeOrchestratorConfig(tmpDir, { dispatchMode: "missions" });
+    const state = makeOrchestratorState();
+
+    dispatchPlanning(config, state, []);
+
+    const events = readEvents(tmpDir);
+    const errorEvent = events.find((e) => e.type === "error");
+    expect(errorEvent).toBeTruthy();
+    expect(errorEvent?.message).toContain("no planner pane available");
+    expect(state.claimedTasks.has("__planning__")).toBe(false);
+  });
+
   it("buildPlanningPrompt includes mission context and instructions", () => {
     saveMission(tmpDir, {
       title: "Ship v2",
@@ -1931,6 +1994,27 @@ describe("mission lifecycle", () => {
     // Master pane should be notified
     const sendCalls = tmuxCalls.filter((c) => c.args.includes("send-keys") && c.args.includes("%0"));
     expect(sendCalls.length).toBeGreaterThan(0);
+  });
+
+  it("handleMissionComplete returns early when milestones are not done", () => {
+    const mission = {
+      title: "Ship v2",
+      description: "Major release",
+      status: "active" as const,
+      branch: null,
+      milestones: [
+        { id: "M1", title: "Phase 1", description: "", status: "active" as const, order: 1, created: "2026-01-01T00:00:00Z", updated: "2026-01-01T00:00:00Z" },
+      ],
+      created: "2026-01-01T00:00:00Z",
+      updated: "2026-01-01T00:00:00Z",
+    };
+    saveMission(tmpDir, mission);
+
+    const config = makeOrchestratorConfig(tmpDir, { dispatchMode: "missions" });
+    handleMissionComplete(config, mission, []);
+
+    expect(loadMission(tmpDir)?.status).toBe("active");
+    expect(existsSync(join(tmpDir, ".tasks", "dispatch", "mission-complete.md"))).toBe(false);
   });
 
   it("mission create sets status to planning", () => {

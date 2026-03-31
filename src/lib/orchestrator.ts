@@ -97,7 +97,7 @@ export function runHook(command: string, cwd: string): { ok: true } | { ok: fals
 // Agent detection: Claude Code reports its version (e.g. "2.1.80") as currentCommand,
 // not "claude". Detect agents by checking both the command name and the pane title.
 const SHELL_COMMANDS = new Set(["zsh", "bash", "sh", "fish"]);
-const AGENT_COMMANDS = new Set(["claude", "codex"]);
+const AGENT_PREFIXES = ["claude", "codex"];
 const SPINNERS = /^[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏⠂⠒⠢⠆⠐⠠⠄◐◓◑◒✳|/\\-] /;
 const VERSION_PATTERN = /^\d+\.\d+/;
 
@@ -138,7 +138,7 @@ export function agentIdentifier(pane: PaneInfo): string {
 
 export function isAgentPane(pane: PaneInfo): boolean {
   const cmd = pane.currentCommand.toLowerCase();
-  if (AGENT_COMMANDS.has(cmd)) return true;
+  if (AGENT_PREFIXES.some((p) => cmd.startsWith(p))) return true;
   // Claude Code shows its version string as the command (e.g. "2.1.80")
   if (VERSION_PATTERN.test(cmd)) return true;
   // Title-based detection — check for Claude Code or French agent names
@@ -391,6 +391,9 @@ export function checkMilestoneCompletion(
     // Check if a validation contract exists — if so, go through validation
     const contract = loadValidationContract(config.dir);
     if (contract) {
+      const dispatched = dispatchValidation(config, state, milestone, milestoneTasks, panes);
+      if (!dispatched) continue;
+
       milestone.status = "validating";
       milestone.updated = new Date().toISOString();
       changed = true;
@@ -398,11 +401,10 @@ export function checkMilestoneCompletion(
       appendEvent(config.dir, {
         timestamp: new Date().toISOString(),
         type: "milestone_validating",
+        milestoneId: milestone.id,
+        title: milestone.title,
         message: `Milestone "${milestone.title}" (${milestone.id}) — all tasks done, dispatching validation`,
       });
-
-      // Dispatch validation to a validator pane
-      dispatchValidation(config, state, milestone, milestoneTasks, panes);
     } else {
       // No contract — skip straight to done
       milestone.status = "done";
@@ -412,15 +414,12 @@ export function checkMilestoneCompletion(
       appendEvent(config.dir, {
         timestamp: new Date().toISOString(),
         type: "milestone_complete",
+        milestoneId: milestone.id,
+        title: milestone.title,
         message: `Milestone "${milestone.title}" (${milestone.id}) completed`,
       });
 
-      // Activate next locked milestone
-      const next = sorted.find((m) => m.status === "locked");
-      if (next) {
-        next.status = "active";
-        next.updated = new Date().toISOString();
-      }
+      activateNextMilestone(mission, milestone.id);
     }
   }
 
@@ -428,6 +427,21 @@ export function checkMilestoneCompletion(
     mission.updated = new Date().toISOString();
     saveMission(config.dir, mission);
   }
+}
+
+function activateNextMilestone(mission: Mission, completedMilestoneId: string): boolean {
+  const sorted = [...mission.milestones].sort((a, b) => a.order - b.order);
+  const completed = sorted.find((milestone) => milestone.id === completedMilestoneId);
+  if (!completed || completed.status !== "done") return false;
+
+  const next = sorted.find(
+    (milestone) => milestone.order > completed.order && milestone.status === "locked",
+  );
+  if (!next) return false;
+
+  next.status = "active";
+  next.updated = new Date().toISOString();
+  return true;
 }
 
 /**
@@ -475,7 +489,7 @@ export function dispatchValidation(
   milestone: Milestone,
   completedTasks: Task[],
   panes: PaneInfo[],
-): void {
+): boolean {
   // Find validator pane, fall back to any idle non-lead agent
   const validatorPane =
     panes.find((p) => p.role === "validator" && isIdleForDispatch(p)) ??
@@ -491,7 +505,7 @@ export function dispatchValidation(
       type: "error",
       message: `No idle validator pane for milestone "${milestone.title}" — validation pending`,
     });
-    return;
+    return false;
   }
 
   // Initialize validation state with pending entries for all fulfills
@@ -518,19 +532,35 @@ export function dispatchValidation(
   const dispatchFile = join(dispatchDir, `validate-${milestone.id}.md`);
   writeFileSync(dispatchFile, prompt);
 
-  sendCommand(
-    config.session,
-    validatorPane.id,
-    `Read and execute: .tasks/dispatch/validate-${milestone.id}.md`,
-  );
+  try {
+    sendCommand(
+      config.session,
+      validatorPane.id,
+      `Read and execute: .tasks/dispatch/validate-${milestone.id}.md`,
+    );
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    appendEvent(config.dir, {
+      timestamp: new Date().toISOString(),
+      type: "error",
+      message: `Failed to dispatch validation for milestone "${milestone.title}": ${message}`,
+    });
+    return false;
+  }
+
+  saveValidationState(config.dir, valState);
 
   appendEvent(config.dir, {
     timestamp: new Date().toISOString(),
     type: "validation_dispatch",
+    milestoneId: milestone.id,
+    title: milestone.title,
+    target: validatorPane.title,
     message: `Dispatched validation for "${milestone.title}" to ${validatorPane.title}`,
   });
 
   state.lastActivity.set(validatorPane.id, Date.now());
+  return true;
 }
 
 /**
@@ -555,15 +585,29 @@ export function checkValidationResults(config: OrchestratorConfig, tasks: Task[]
     const milestoneTasks = tasks.filter((t) => t.milestone === milestone.id);
     const milestoneAssertionIds = new Set(milestoneTasks.flatMap((t) => t.fulfills));
 
+    if (milestoneAssertionIds.size === 0) {
+      milestone.status = "done";
+      milestone.updated = new Date().toISOString();
+      changed = true;
+
+      appendEvent(config.dir, {
+        timestamp: new Date().toISOString(),
+        type: "milestone_complete",
+        milestoneId: milestone.id,
+        title: milestone.title,
+        message: `Milestone "${milestone.title}" (${milestone.id}) — no assertions to validate`,
+      });
+
+      activateNextMilestone(mission, milestone.id);
+      continue;
+    }
+
     // Check if all milestone assertions have been verified (no longer pending)
     const allVerified = [...milestoneAssertionIds].every((id) => {
       const entry = valState.assertions[id];
       return entry && entry.status !== "pending";
     });
     if (!allVerified) continue;
-
-    // Check if there are zero assertions to verify — skip
-    if (milestoneAssertionIds.size === 0) continue;
 
     const allPassing = [...milestoneAssertionIds].every(
       (id) => valState.assertions[id]?.status === "passing",
@@ -577,15 +621,12 @@ export function checkValidationResults(config: OrchestratorConfig, tasks: Task[]
       appendEvent(config.dir, {
         timestamp: new Date().toISOString(),
         type: "milestone_complete",
+        milestoneId: milestone.id,
+        title: milestone.title,
         message: `Milestone "${milestone.title}" (${milestone.id}) — validation passed`,
       });
 
-      // Activate next locked milestone
-      const next = sorted.find((m) => m.status === "locked");
-      if (next) {
-        next.status = "active";
-        next.updated = new Date().toISOString();
-      }
+      activateNextMilestone(mission, milestone.id);
     } else {
       // Create remediation tasks for failing assertions
       const failedIds = [...milestoneAssertionIds].filter(
@@ -593,7 +634,9 @@ export function checkValidationResults(config: OrchestratorConfig, tasks: Task[]
       );
 
       for (const assertionId of failedIds) {
-        const entry = valState.assertions[assertionId]!;
+        const entry = valState.assertions[assertionId];
+        if (!entry || entry.status !== "failing") continue;
+
         const id = nextTaskId(config.dir);
         const now = new Date().toISOString();
         const task: Task = {
@@ -632,6 +675,7 @@ export function checkValidationResults(config: OrchestratorConfig, tasks: Task[]
           timestamp: new Date().toISOString(),
           type: "remediation",
           taskId: id,
+          assertionId,
           message: `Created remediation task ${id} for failing assertion ${assertionId}`,
         });
       }
@@ -646,6 +690,9 @@ export function checkValidationResults(config: OrchestratorConfig, tasks: Task[]
       appendEvent(config.dir, {
         timestamp: new Date().toISOString(),
         type: "validation_failed",
+        milestoneId: milestone.id,
+        title: milestone.title,
+        failedCount: failedIds.length,
         message: `Milestone "${milestone.title}" (${milestone.id}) — ${failedIds.length} assertion(s) failed, remediation tasks created`,
       });
     }
@@ -713,7 +760,14 @@ export function dispatchPlanning(
     panes.find((p) => config.masterPane && normalizePaneTitle(p.title) === config.masterPane) ??
     panes.find((p) => isIdleForDispatch(p));
 
-  if (!plannerPane) return;
+  if (!plannerPane) {
+    appendEvent(config.dir, {
+      timestamp: new Date().toISOString(),
+      type: "error",
+      message: "Unable to dispatch mission planning: no planner pane available",
+    });
+    return;
+  }
 
   state.claimedTasks.add(PLANNING_CLAIM);
 
@@ -732,6 +786,7 @@ export function dispatchPlanning(
   appendEvent(config.dir, {
     timestamp: new Date().toISOString(),
     type: "planning",
+    target: plannerPane.title,
     message: `Dispatched mission planning to ${plannerPane.title}`,
   });
 
@@ -748,6 +803,8 @@ export function handleMissionComplete(
   mission: Mission,
   panes: PaneInfo[],
 ): void {
+  if (!mission.milestones.every((milestone) => milestone.status === "done")) return;
+
   mission.status = "complete";
   mission.updated = new Date().toISOString();
   saveMission(config.dir, mission);
@@ -790,6 +847,10 @@ export function handleMissionComplete(
   appendEvent(config.dir, {
     timestamp: new Date().toISOString(),
     type: "mission_complete",
+    title: mission.title,
+    milestoneCount: totalMilestones,
+    taskCount: doneTasks,
+    ...(prResult ? { prNumber: prResult.number } : {}),
     message: `Mission "${mission.title}" completed — ${totalMilestones} milestones, ${doneTasks} tasks${prResult ? `, PR #${prResult.number}` : ""}`,
   });
 }
@@ -1284,6 +1345,8 @@ export function detectCompletions(
             timestamp: new Date().toISOString(),
             type: "discovered_issue",
             taskId: followUpId,
+            sourceTaskId: task.id,
+            issue,
             message: `Auto-created follow-up task ${followUpId} from ${task.id}: ${issue}`,
           });
         }

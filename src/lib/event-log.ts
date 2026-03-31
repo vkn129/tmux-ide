@@ -89,6 +89,38 @@ export function formatEventMessage(event: StructuredEvent): string {
         event.message.length > 50 ? event.message.slice(0, 50) + "..." : event.message;
       return `Notified ${event.target}: "${preview}"`;
     }
+    case "milestone_validating":
+      return event.title && event.milestoneId
+        ? `Milestone "${event.title}" (${event.milestoneId}) entered validation`
+        : "Milestone entered validation";
+    case "milestone_complete":
+      return event.title && event.milestoneId
+        ? `Milestone "${event.title}" (${event.milestoneId}) completed`
+        : "Milestone completed";
+    case "validation_dispatch":
+      return event.title && event.target
+        ? `Dispatched validation for "${event.title}" to ${event.target}`
+        : "Dispatched milestone validation";
+    case "remediation":
+      return event.assertionId
+        ? `Created remediation task ${event.taskId} for assertion ${event.assertionId}`
+        : `Created remediation task ${event.taskId}`;
+    case "validation_failed":
+      return event.title && event.failedCount != null
+        ? `Milestone "${event.title}" validation failed (${event.failedCount} assertion(s))`
+        : "Milestone validation failed";
+    case "planning":
+      return event.target
+        ? `Dispatched mission planning to ${event.target}`
+        : "Dispatched mission planning";
+    case "mission_complete":
+      return event.title
+        ? `Mission "${event.title}" completed`
+        : "Mission completed";
+    case "discovered_issue":
+      return event.issue
+        ? `Created follow-up task ${event.taskId}: ${event.issue}`
+        : `Created follow-up task ${event.taskId} for discovered issue`;
     default:
       return (event as { message?: string }).message ?? `Event: ${(event as { type: string }).type}`;
   }

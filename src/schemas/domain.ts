@@ -198,6 +198,66 @@ const NotifyEventZ = z.object({
   message: z.string(),
 });
 
+const MilestoneValidatingEventZ = z.object({
+  timestamp: z.string(),
+  type: z.literal("milestone_validating"),
+  milestoneId: z.string().optional(),
+  title: z.string().optional(),
+});
+
+const MilestoneCompleteEventZ = z.object({
+  timestamp: z.string(),
+  type: z.literal("milestone_complete"),
+  milestoneId: z.string().optional(),
+  title: z.string().optional(),
+});
+
+const ValidationDispatchEventZ = z.object({
+  timestamp: z.string(),
+  type: z.literal("validation_dispatch"),
+  milestoneId: z.string().optional(),
+  title: z.string().optional(),
+  target: z.string().optional(),
+});
+
+const RemediationEventZ = z.object({
+  timestamp: z.string(),
+  type: z.literal("remediation"),
+  taskId: z.string(),
+  assertionId: z.string().optional(),
+});
+
+const ValidationFailedEventZ = z.object({
+  timestamp: z.string(),
+  type: z.literal("validation_failed"),
+  milestoneId: z.string().optional(),
+  title: z.string().optional(),
+  failedCount: z.number().optional(),
+});
+
+const PlanningEventZ = z.object({
+  timestamp: z.string(),
+  type: z.literal("planning"),
+  target: z.string().optional(),
+});
+
+const MissionCompleteEventZ = z.object({
+  timestamp: z.string(),
+  type: z.literal("mission_complete"),
+  title: z.string().optional(),
+  milestoneCount: z.number().optional(),
+  taskCount: z.number().optional(),
+  prNumber: z.number().optional(),
+});
+
+const DiscoveredIssueEventZ = z.object({
+  timestamp: z.string(),
+  type: z.literal("discovered_issue"),
+  taskId: z.string(),
+  sourceTaskId: z.string().optional(),
+  issue: z.string().optional(),
+});
+
 export const StructuredEventSchemaZ = z.union([
   DispatchEventZ,
   CompletionEventZ,
@@ -209,6 +269,14 @@ export const StructuredEventSchemaZ = z.union([
   StatusChangeEventZ,
   SendEventZ,
   NotifyEventZ,
+  MilestoneValidatingEventZ,
+  MilestoneCompleteEventZ,
+  ValidationDispatchEventZ,
+  RemediationEventZ,
+  ValidationFailedEventZ,
+  PlanningEventZ,
+  MissionCompleteEventZ,
+  DiscoveredIssueEventZ,
 ]);
 
 // ---------------------------------------------------------------------------
