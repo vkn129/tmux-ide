@@ -25,7 +25,7 @@ export const PaneSchema = z.object({
   size: sizeField.optional(),
   focus: z.boolean().optional(),
   env: z.record(z.string(), z.union([z.string(), z.number()])).optional(),
-  role: z.enum(["lead", "teammate", "planner", "validator"]).optional(),
+  role: z.enum(["lead", "teammate", "planner", "validator", "researcher"]).optional(),
   task: z.string().optional(),
   specialty: z.string().optional(),
   skill: z.string().optional(),
@@ -63,6 +63,22 @@ export const OrchestratorYamlConfigSchema = z.object({
         healthcheck: z.string().optional(),
       }),
     )
+    .optional(),
+  research: z
+    .object({
+      enabled: z.boolean().optional(),
+      triggers: z
+        .object({
+          mission_start: z.boolean().optional(),
+          milestone_progress: z.number().min(0).optional(),
+          milestone_complete: z.boolean().optional(),
+          periodic_minutes: z.number().min(0).optional(),
+          retry_cluster: z.boolean().optional(),
+          stall_detected: z.boolean().optional(),
+          discovered_issue: z.boolean().optional(),
+        })
+        .optional(),
+    })
     .optional(),
 });
 

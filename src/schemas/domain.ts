@@ -104,6 +104,8 @@ export const EventTypeSchemaZ = z.enum([
   "planning",
   "mission_complete",
   "discovered_issue",
+  "research_dispatch",
+  "research_finding",
 ]);
 
 export const OrchestratorEventSchemaZ = z.object({
@@ -258,6 +260,22 @@ const DiscoveredIssueEventZ = z.object({
   issue: z.string().optional(),
 });
 
+const ResearchDispatchEventZ = z.object({
+  timestamp: z.string(),
+  type: z.literal("research_dispatch"),
+  taskId: z.string(),
+  target: z.string().optional(),
+  researchType: z.string().optional(),
+});
+
+const ResearchFindingEventZ = z.object({
+  timestamp: z.string(),
+  type: z.literal("research_finding"),
+  taskId: z.string(),
+  researchType: z.string().optional(),
+  summary: z.string().optional(),
+});
+
 export const StructuredEventSchemaZ = z.union([
   DispatchEventZ,
   CompletionEventZ,
@@ -277,6 +295,8 @@ export const StructuredEventSchemaZ = z.union([
   PlanningEventZ,
   MissionCompleteEventZ,
   DiscoveredIssueEventZ,
+  ResearchDispatchEventZ,
+  ResearchFindingEventZ,
 ]);
 
 // ---------------------------------------------------------------------------
@@ -332,7 +352,9 @@ export const PaneInfoSchemaZ = z.object({
   width: z.number(),
   height: z.number(),
   active: z.boolean(),
-  role: z.enum(["lead", "teammate", "planner", "validator", "widget", "shell"]).nullable(),
+  role: z
+    .enum(["lead", "teammate", "planner", "validator", "researcher", "widget", "shell"])
+    .nullable(),
   name: z.string().nullable(),
   type: z.string().nullable(),
 });

@@ -31,7 +31,9 @@ export type EventType =
   | "validation_failed"
   | "planning"
   | "mission_complete"
-  | "discovered_issue";
+  | "discovered_issue"
+  | "research_dispatch"
+  | "research_finding";
 
 export interface OrchestratorEvent {
   timestamp: string;
@@ -119,6 +121,14 @@ export function formatEventMessage(event: StructuredEvent): string {
       return event.issue
         ? `Created follow-up task ${event.taskId}: ${event.issue}`
         : `Created follow-up task ${event.taskId} for discovered issue`;
+    case "research_dispatch":
+      return event.target && event.researchType
+        ? `Dispatched ${event.researchType} research to ${event.target}`
+        : `Dispatched research task ${event.taskId}`;
+    case "research_finding":
+      return event.summary && event.researchType
+        ? `Research finding (${event.researchType}): ${event.summary}`
+        : `Recorded research finding from task ${event.taskId}`;
     default:
       return (
         (event as { message?: string }).message ?? `Event: ${(event as { type: string }).type}`
