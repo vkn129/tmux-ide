@@ -1410,7 +1410,7 @@ export function createApp(options: CreateAppOptions = {}): Hono {
     return c.json({
       ok: true,
       uptime: Math.round(process.uptime()),
-      version: "2.0.0",
+      version: "2.1.0",
     });
   });
 
